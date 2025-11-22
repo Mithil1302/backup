@@ -94,7 +94,7 @@ export default function TransfersPage() {
     const getWarehouseName = (id: string) => warehouses?.find(w => w.id === id)?.name || 'N/A';
     const getProductName = (id: string) => products?.find(p => p.id === id)?.name || 'N/A';
 
-    if (isUserLoading || isWarehousesLoading || isProductsLoading || isTransfersLoading) {
+    if (isUserLoading || isWarehousesLoading || isProductsLoading) {
       return <div>Loading...</div>;
     }
     

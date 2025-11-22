@@ -72,7 +72,7 @@ export default function AdjustmentsPage() {
   const getProductName = (productId: string) => products?.find(p => p.id === productId)?.name || 'Unknown Product';
   const getWarehouseName = (warehouseId: string) => warehouses?.find(w => w.id === warehouseId)?.name || 'Unknown Warehouse';
 
-  if (isUserLoading || isProductsLoading || isWarehousesLoading || isAdjustmentsLoading) {
+  if (isUserLoading || isProductsLoading || isWarehousesLoading) {
       return <div>Loading...</div>;
   }
 

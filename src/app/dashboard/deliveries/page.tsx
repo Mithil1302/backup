@@ -70,7 +70,7 @@ export default function DeliveriesPage() {
       });
     };
 
-    if (isUserLoading || isCustomersLoading || isDeliveriesLoading) {
+    if (isUserLoading || isCustomersLoading) {
       return <div>Loading...</div>;
     }
     
@@ -123,7 +123,7 @@ export default function DeliveriesPage() {
                 <TableHead>Customer</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Date</TableHead>
-                <TableHead><span className="sr-only">Actions</span></TableHead>
+                <TableHead><span className="sr-only">Actions</span></span ></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

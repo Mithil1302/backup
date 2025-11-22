@@ -70,7 +70,7 @@ export default function ReceiptsPage() {
       });
     };
 
-    if (isUserLoading || isSuppliersLoading || isReceiptsLoading) {
+    if (isUserLoading || isSuppliersLoading) {
       return <div>Loading...</div>;
     }
 
