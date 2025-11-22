@@ -36,7 +36,11 @@ export function setDocumentNonBlocking(docRef: DocumentReference, data: any, opt
  * Does NOT await the write operation internally.
  * Returns the Promise for the new doc ref, but typically not awaited by caller.
  */
-export function addDocumentNonBlocking(colRef: CollectionReference, data: any) {
+export function addDocumentNonBlocking(colRef: CollectionReference | null, data: any) {
+  if (!colRef) {
+    console.error("addDocumentNonBlocking was called with a null collection reference.");
+    return Promise.reject(new Error("Collection reference is not available."));
+  }
   const promise = addDoc(colRef, data)
     .catch(error => {
       errorEmitter.emit(
