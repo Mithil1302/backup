@@ -22,7 +22,7 @@ export default function TransfersPage() {
     const transfersCollection = useMemoFirebase(() => {
         if (!firestore || !user?.uid) return null;
         return collection(firestore, 'users', user.uid, 'internalTransfers');
-    }, [firestore, user]);
+    }, [firestore, user?.uid]);
     const { data: transfers, isLoading } = useCollection<InternalTransfer>(transfersCollection);
 
     const warehousesCollection = useMemoFirebase(() => firestore ? collection(firestore, 'warehouses') : null, [firestore]);

@@ -30,7 +30,7 @@ export default function AdjustmentsPage() {
   const adjustmentsCollection = useMemoFirebase(() => {
     if (!firestore || !user?.uid) return null;
     return collection(firestore, 'users', user.uid, 'stockAdjustments');
-  }, [firestore, user]);
+  }, [firestore, user?.uid]);
   const { data: adjustments, isLoading } = useCollection<StockAdjustment>(adjustmentsCollection);
 
   const selectedProduct = useMemo(() => {

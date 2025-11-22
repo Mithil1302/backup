@@ -25,7 +25,7 @@ export default function ReceiptsPage() {
     const receiptsCollection = useMemoFirebase(() => {
         if (!firestore || !user?.uid) return null;
         return collection(firestore, 'users', user.uid, 'receipts');
-    }, [firestore, user]);
+    }, [firestore, user?.uid]);
     const { data: receipts, isLoading } = useCollection<Receipt>(receiptsCollection);
 
     const suppliersCollection = useMemoFirebase(() => firestore ? collection(firestore, 'suppliers') : null, [firestore]);

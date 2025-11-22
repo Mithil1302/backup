@@ -25,7 +25,7 @@ export default function DeliveriesPage() {
     const deliveriesCollection = useMemoFirebase(() => {
         if (!firestore || !user?.uid) return null;
         return collection(firestore, 'users', user.uid, 'deliveryOrders');
-    }, [firestore, user]);
+    }, [firestore, user?.uid]);
     const { data: deliveries, isLoading } = useCollection<DeliveryOrder>(deliveriesCollection);
 
     const customersCollection = useMemoFirebase(() => firestore ? collection(firestore, 'customers') : null, [firestore]);

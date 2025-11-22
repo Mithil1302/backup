@@ -19,23 +19,23 @@ export default function Dashboard() {
   const productsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'products') : null, [firestore]);
   const { data: products } = useCollection<Product>(productsCollection);
 
-  const receiptsCollection = useMemoFirebase(() => {
+  const receiptsQuery = useMemoFirebase(() => {
     if (!firestore || !user?.uid) return null;
     return query(collection(firestore, 'users', user.uid, 'receipts'), orderBy('receiptDate', 'desc'), limit(5));
-  }, [firestore, user]);
-  const { data: receipts } = useCollection<Receipt>(receiptsCollection);
+  }, [firestore, user?.uid]);
+  const { data: receipts } = useCollection<Receipt>(receiptsQuery);
 
-  const deliveriesCollection = useMemoFirebase(() => {
+  const deliveriesQuery = useMemoFirebase(() => {
     if (!firestore || !user?.uid) return null;
     return query(collection(firestore, 'users', user.uid, 'deliveryOrders'), orderBy('deliveryDate', 'desc'), limit(5));
-  }, [firestore, user]);
-  const { data: deliveries } = useCollection<DeliveryOrder>(deliveriesCollection);
+  }, [firestore, user?.uid]);
+  const { data: deliveries } = useCollection<DeliveryOrder>(deliveriesQuery);
 
-  const transfersCollection = useMemoFirebase(() => {
+  const transfersQuery = useMemoFirebase(() => {
     if (!firestore || !user?.uid) return null;
     return query(collection(firestore, 'users', user.uid, 'internalTransfers'), orderBy('transferDate', 'desc'), limit(5));
-  }, [firestore, user]);
-  const { data: transfers } = useCollection<InternalTransfer>(transfersCollection);
+  }, [firestore, user?.uid]);
+  const { data: transfers } = useCollection<InternalTransfer>(transfersQuery);
 
 
   // KPI Calculations
