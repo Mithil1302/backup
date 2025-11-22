@@ -68,7 +68,7 @@ export default function TransfersPage() {
       <PageHeader title="Internal Transfers">
         <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
           <SheetTrigger asChild>
-            <Button size="sm" className="flex items-center gap-2">
+            <Button size="sm" className="flex items-center gap-2" onClick={() => setIsSheetOpen(true)}>
               <PlusCircle className="h-4 w-4" />
               <span>New Transfer</span>
             </Button>
@@ -105,7 +105,7 @@ export default function TransfersPage() {
                   <Input id="quantity" name="quantity" type="number" placeholder="0" required />
                </div>
               <div className="flex justify-end gap-2 mt-4">
-                  <Button variant="outline" type="button" onClick={() => setIsSheetOpen(false)}>Cancel</Button>
+                  <Button variant="outline" type="button" onClick={() => setIsSheetOpen(false)}>Cancel</Button>                  
                   <Button type="submit">Create Transfer</Button>
               </div>
             </form>
@@ -137,7 +137,7 @@ export default function TransfersPage() {
               {!isLoading && transfers?.length === 0 && <TableRow><TableCell colSpan={8} className="text-center">No transfers found.</TableCell></TableRow>}
               {transfers?.map((transfer) => (
                 <TableRow key={transfer.id}>
-                  <TableCell className="font-medium">TR-{transfer.id.substring(0,6).toUpperCase()}</TableCell>
+                  <TableCell className="font-medium">TR-{transfer.id.substring(0,6).toUpperCase()}</TableCell>                  
                   <TableCell>{getProductName(transfer.productId)}</TableCell>
                   <TableCell>{getWarehouseName(transfer.fromWarehouseId)}</TableCell>
                   <TableCell>{getWarehouseName(transfer.toWarehouseId)}</TableCell>

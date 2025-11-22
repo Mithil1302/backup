@@ -64,18 +64,20 @@ export default function DashboardLayout({
   const [hasSeeded, setHasSeeded] = useState(false);
 
   // Check if data exists to prevent re-seeding
-  const productsQuery = useMemoFirebase(() => collection(firestore, 'products'), [firestore]);
+  const productsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return collection(firestore, 'products');
+  }, [firestore]);
   const { data: products, isLoading: productsIsLoading } = useCollection<Product>(productsQuery);
 
   useEffect(() => {
-    if (!productsIsLoading && products?.length === 0 && !hasSeeded) {
+    if (firestore && !productsIsLoading && products?.length === 0 && !hasSeeded) {
       console.log('No products found, seeding database...');
       seedDatabase(firestore).then(() => {
         setHasSeeded(true);
         console.log('Database seeded successfully.');
       });
     } else if (products && products.length > 0) {
-      // If data already exists, mark as seeded to prevent future attempts
       if (!hasSeeded) setHasSeeded(true);
     }
   }, [productsIsLoading, products, firestore, hasSeeded]);
@@ -88,12 +90,13 @@ export default function DashboardLayout({
 
   const handleLogout = () => {
     if(auth) {
-      signOut(auth);
+      signOut(auth).then(() => {
+        router.push('/');
+      });
     }
-    router.push('/');
   };
 
-  if (isUserLoading || !user || !hasSeeded) {
+  if (isUserLoading || !user || (!productsIsLoading && !hasSeeded && products?.length === 0)) {
     return (
         <div className="flex min-h-screen items-center justify-center">
             <p>Loading...</p>

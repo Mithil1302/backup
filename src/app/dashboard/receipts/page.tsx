@@ -123,9 +123,9 @@ export default function ReceiptsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading && <TableRow><TableCell colSpan={5}>Loading...</TableCell></TableRow>}
+              {isLoading && <TableRow><TableCell colSpan={5} className="text-center">Loading...</TableCell></TableRow>}
               {!isLoading && receipts?.length === 0 && <TableRow><TableCell colSpan={5} className="text-center">No receipts found.</TableCell></TableRow>}
-              {receipts && receipts.map((receipt) => (
+              {receipts?.map((receipt) => (
                 <TableRow key={receipt.id}>
                   <TableCell className="font-medium">RCPT-{receipt.id.substring(0, 6).toUpperCase()}</TableCell>
                   <TableCell>{suppliers?.find(s => s.id === receipt.supplierId)?.name || 'N/A'}</TableCell>

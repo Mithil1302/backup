@@ -37,12 +37,17 @@ export default function AdjustmentsPage() {
     return products?.find(p => p.id === selectedProductId);
   }, [products, selectedProductId]);
 
+  // This is a simplified stock lookup. In a real app, you'd have a dedicated stock collection.
+  const currentStock = useMemo(() => {
+    return selectedProduct?.stock ?? 0;
+  }, [selectedProduct]);
+
   const difference = useMemo(() => {
-    if (selectedProduct && countedQty !== '' && typeof selectedProduct.stock === 'number') {
-      return Number(countedQty) - selectedProduct.stock;
+    if (countedQty !== '') {
+      return Number(countedQty) - currentStock;
     }
     return 0;
-  }, [selectedProduct, countedQty]);
+  }, [currentStock, countedQty]);
 
   const handleApplyAdjustment = () => {
     if (!adjustmentsCollection || !selectedWarehouseId || !selectedProductId || countedQty === '') return;
@@ -116,11 +121,11 @@ export default function AdjustmentsPage() {
                     </div>
                     {selectedProduct && (
                       <div className="space-y-2">
-                          <p className="text-sm text-muted-foreground">Recorded Quantity: <span className="font-bold text-foreground">{(selectedProduct.stock || 0)} {selectedProduct.unitOfMeasure}</span></p>
+                          <p className="text-sm text-muted-foreground">Recorded Quantity: <span className="font-bold text-foreground">{currentStock} {selectedProduct.unitOfMeasure}</span></p>
                           <p className="text-sm text-muted-foreground">Difference: <span className={`font-bold ${difference > 0 ? 'text-green-500' : difference < 0 ? 'text-red-500' : ''}`}>{difference} {selectedProduct.unitOfMeasure}</span></p>
                       </div>
                     )}
-                    <Button onClick={handleApplyAdjustment} disabled={!difference}>Apply Adjustment</Button>
+                    <Button onClick={handleApplyAdjustment} disabled={!selectedProductId || countedQty === ''}>Apply Adjustment</Button>
                 </div>
             </div>
 

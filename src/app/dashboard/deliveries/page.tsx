@@ -123,9 +123,9 @@ export default function DeliveriesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading && <TableRow><TableCell colSpan={5}>Loading...</TableCell></TableRow>}
+              {isLoading && <TableRow><TableCell colSpan={5} className="text-center">Loading...</TableCell></TableRow>}
               {!isLoading && deliveries?.length === 0 && <TableRow><TableCell colSpan={5} className="text-center">No delivery orders found.</TableCell></TableRow>}
-              {deliveries && deliveries.map((delivery) => (
+              {deliveries?.map((delivery) => (
                 <TableRow key={delivery.id}>
                   <TableCell className="font-medium">DO-{delivery.id.substring(0, 6).toUpperCase()}</TableCell>
                    <TableCell>{customers?.find(c => c.id === delivery.customerId)?.name || 'N/A'}</TableCell>
