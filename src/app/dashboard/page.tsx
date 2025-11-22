@@ -1,130 +1,83 @@
 'use client';
 
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Archive, ArrowRightLeft, Boxes, Package, Truck } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { useCollection, useFirestore, useUser } from "@/firebase";
-import { collection, limit, orderBy, query } from "firebase/firestore";
-import type { Product, Receipt, DeliveryOrder, InternalTransfer } from "@/lib/types";
+import { collection } from "firebase/firestore";
+import type { Receipt, DeliveryOrder } from "@/lib/types";
 import { useMemo } from "react";
+import { ArrowRight } from "lucide-react";
 
 export default function Dashboard() {
   const firestore = useFirestore();
   const { user } = useUser();
 
   // Data Hooks
-  const productsCollection = useMemo(() => {
-    if (!firestore) return null;
-    return collection(firestore, 'products');
-  }, [firestore]);
-  const { data: products } = useCollection<Product>(productsCollection);
-
-  const receiptsQuery = useMemo(() => {
+  const receiptsCollection = useMemo(() => {
     if (!firestore || !user?.uid) return null;
-    return query(collection(firestore, 'users', user.uid, 'receipts'), orderBy('receiptDate', 'desc'), limit(5));
+    return collection(firestore, 'users', user.uid, 'receipts');
   }, [firestore, user?.uid]);
-  const { data: receipts } = useCollection<Receipt>(receiptsQuery);
+  const { data: receipts } = useCollection<Receipt>(receiptsCollection);
 
-  const deliveriesQuery = useMemo(() => {
+  const deliveriesCollection = useMemo(() => {
     if (!firestore || !user?.uid) return null;
-    return query(collection(firestore, 'users', user.uid, 'deliveryOrders'), orderBy('deliveryDate', 'desc'), limit(5));
+    return collection(firestore, 'users', user.uid, 'deliveryOrders');
   }, [firestore, user?.uid]);
-  const { data: deliveries } = useCollection<DeliveryOrder>(deliveriesQuery);
+  const { data: deliveries } = useCollection<DeliveryOrder>(deliveriesCollection);
 
-  const transfersQuery = useMemo(() => {
-    if (!firestore || !user?.uid) return null;
-    return query(collection(firestore, 'users', user.uid, 'internalTransfers'), orderBy('transferDate', 'desc'), limit(5));
-  }, [firestore, user?.uid]);
-  const { data: transfers } = useCollection<InternalTransfer>(transfersQuery);
-
-
-  // KPI Calculations
-  const totalStock = useMemo(() => products?.reduce((acc, p) => acc + (p.stock || 0), 0) || 0, [products]);
-  const lowStockCount = useMemo(() => products?.filter(p => (p.stock || 0) < 50 && (p.stock || 0) > 0).length || 0, [products]);
-  const outOfStockCount = useMemo(() => products?.filter(p => (p.stock || 0) === 0).length || 0, [products]);
-  const pendingReceipts = useMemo(() => receipts?.filter(r => r.status === 'Waiting' || r.status === 'Ready').length || 0, [receipts]);
-  const pendingDeliveries = useMemo(() => deliveries?.filter(d => d.status === 'Waiting' || d.status === 'Ready').length || 0, [deliveries]);
+  const toReceiveCount = useMemo(() => {
+    return receipts.filter(r => r.status === 'Waiting' || r.status === 'Ready').length;
+  }, [receipts]);
   
-  const kpis = [
-    { label: "Total Products in Stock", value: totalStock.toLocaleString(), icon: Boxes },
-    { label: "Low / Out of Stock", value: `${lowStockCount} / ${outOfStockCount}`, icon: Archive },
-    { label: "Pending Receipts", value: pendingReceipts, icon: Truck },
-    { label: "Pending Deliveries", value: pendingDeliveries, icon: Package },
-    { label: "Internal Transfers", value: transfers?.length || 0, icon: ArrowRightLeft },
-  ];
+  const lateReceipts = useMemo(() => {
+      // This is a placeholder for late logic.
+      return receipts.filter(r => r.status === 'Waiting').length;
+  }, [receipts]);
 
-  // Recent Activity Combination
-  const recentActivities = useMemo(() => {
-    const allActivities = [
-      ...receipts.map(r => ({ ...r, type: 'Receipt', date: r.receiptDate, ref: `RCPT-${r.id.substring(0, 6).toUpperCase()}` })),
-      ...deliveries.map(d => ({ ...d, type: 'Delivery', date: d.deliveryDate, ref: `DO-${d.id.substring(0, 6).toUpperCase()}` })),
-      ...transfers.map(t => ({ ...t, type: 'Transfer', date: t.transferDate, ref: `TRNS-${t.id.substring(0, 6).toUpperCase()}` })),
-    ];
-    return allActivities.sort((a, b) => (b.date?.toMillis() || 0) - (a.date?.toMillis() || 0)).slice(0, 7);
-  }, [receipts, deliveries, transfers]);
+  const toDeliverCount = useMemo(() => {
+      return deliveries.filter(d => d.status === 'Waiting' || d.status === 'Ready').length;
+  }, [deliveries]);
   
-
-  const getStatusVariant = (status: string) => {
-    switch (status) {
-      case "Done": return "default";
-      case "Ready": return "secondary";
-      case "Waiting": return "outline";
-      case "Draft": return "outline";
-      case "Canceled": return "destructive";
-      default: return "default";
-    }
-  };
+  const lateDeliveries = useMemo(() => {
+      // This is a placeholder for late logic.
+      return deliveries.filter(d => d.status === 'Waiting').length;
+  }, [deliveries]);
 
   return (
-    <div className="flex flex-col gap-6">
-        <PageHeader title="Dashboard" />
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-            {kpis.map((kpi) => (
-                <Card key={kpi.label}>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">{kpi.label}</CardTitle>
-                        <kpi.icon className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{kpi.value}</div>
-                    </CardContent>
-                </Card>
-            ))}
-        </div>
-        
+    <>
+      <PageHeader title="Dashboard" />
+      <div className="grid gap-8 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Receipt</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+            <Button variant="outline" className="w-fit">
+              {toReceiveCount} to receive
+            </Button>
+            <div className="flex items-center gap-4 text-sm">
+                <span>{lateReceipts} Late</span>
+                <span>{receipts.length} operations</span>
+            </div>
+          </CardContent>
+        </Card>
         <Card>
             <CardHeader>
-                <CardTitle>Recent Inventory Movements</CardTitle>
-                <CardDescription>A log of the most recent stock operations.</CardDescription>
+                <CardTitle>Delivery</CardTitle>
             </CardHeader>
-            <CardContent>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Type</TableHead>
-                            <TableHead>Reference</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Date</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {recentActivities.length === 0 && <TableRow><TableCell colSpan={4} className="text-center">No recent activities.</TableCell></TableRow>}
-                        {recentActivities.map((activity) => (
-                            <TableRow key={activity.id}>
-                                <TableCell className="font-medium">{activity.type}</TableCell>
-                                <TableCell>{activity.ref}</TableCell>
-                                <TableCell>
-                                    <Badge variant={getStatusVariant(activity.status)}>{activity.status}</Badge>
-                                </TableCell>
-                                <TableCell>{activity.date?.toDate().toLocaleDateString()}</TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
+            <CardContent className="flex flex-col gap-4">
+                <Button variant="outline" className="w-fit">
+                    {toDeliverCount} to Deliver
+                </Button>
+                 <div className="flex items-center gap-4 text-sm">
+                    <span>{lateDeliveries} Late</span>
+                    <span>{deliveries.filter(d => d.status === 'Waiting').length} waiting</span>
+                    <span>{deliveries.length} operations</span>
+                </div>
             </CardContent>
         </Card>
-    </div>
+      </div>
+    </>
   );
 }
