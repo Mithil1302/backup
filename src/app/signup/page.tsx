@@ -1,11 +1,11 @@
 'use client';
 
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Logo } from "@/components/logo";
 import { useAuth, initiateEmailSignUp, useUser } from "@/firebase";
 import { useRouter } from "next/navigation";
 import React, { useState, useEffect } from "react";
@@ -76,7 +76,7 @@ export default function SignupPage() {
         <div className="flex flex-col gap-6">
           <div className="flex flex-col gap-2 text-center">
             <div className="flex justify-center mb-4">
-              <Logo />
+              <Image src="/logo.jpg" alt="GreenGrocer IMS Logo" width={120} height={120} className="rounded-lg" />
             </div>
             <h1 className="text-3xl font-bold">Create Account</h1>
             <p className="text-muted-foreground">

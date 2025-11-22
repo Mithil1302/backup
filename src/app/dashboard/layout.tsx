@@ -1,6 +1,7 @@
 'use client';
 
 import Link from "next/link";
+import Image from "next/image";
 import {
   ArrowRightLeft,
   Boxes,
@@ -27,7 +28,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Logo } from "@/components/logo";
 import { useAuth, useUser, useFirestore } from "@/firebase";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
@@ -117,7 +117,7 @@ export default function DashboardLayout({
         <div className="flex h-full max-h-screen flex-col gap-2">
           <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
             <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
-              <Logo />
+              <Image src="/logo.jpg" alt="Logo" width={32} height={32} className="rounded" />
               <span className="">GreenGrocer IMS</span>
             </Link>
           </div>
@@ -174,7 +174,7 @@ export default function DashboardLayout({
                   href="#"
                   className="flex items-center gap-2 text-lg font-semibold mb-4"
                 >
-                  <Logo />
+                  <Image src="/logo.jpg" alt="Logo" width={32} height={32} className="rounded" />
                   <span className="sr-only">GreenGrocer IMS</span>
                 </Link>
                 {navLinks.map(link => (

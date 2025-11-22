@@ -53,16 +53,30 @@ export default function Dashboard() {
   // KPI: Low Stock Items (stock <= reorderLevel)
   const lowStockItems = useMemo(() => {
     if (!products) return [];
-    return products.filter(p => {
+    // Remove duplicates by using a Map with SKU as key
+    const uniqueProducts = new Map<string, Product>();
+    products.forEach(p => {
+      if (!uniqueProducts.has(p.sku)) {
+        uniqueProducts.set(p.sku, p);
+      }
+    });
+    return Array.from(uniqueProducts.values()).filter(p => {
       const reorderLevel = p.reorderLevel || 10; // default to 10 if not set
-      return p.stock <= reorderLevel && p.stock > 0;
+      return p.stock > 0 && p.stock <= reorderLevel;
     });
   }, [products]);
 
   // KPI: Out of Stock Items
   const outOfStockItems = useMemo(() => {
     if (!products) return [];
-    return products.filter(p => p.stock === 0);
+    // Remove duplicates by using a Map with SKU as key
+    const uniqueProducts = new Map<string, Product>();
+    products.forEach(p => {
+      if (!uniqueProducts.has(p.sku)) {
+        uniqueProducts.set(p.sku, p);
+      }
+    });
+    return Array.from(uniqueProducts.values()).filter(p => p.stock === 0 || p.stock < 0);
   }, [products]);
 
   // KPI: Internal Transfers Scheduled
@@ -127,28 +141,53 @@ export default function Dashboard() {
         <PageHeader title="Dashboard" />
         
         {/* Low Stock Alerts */}
-        {(lowStockItems.length > 0 || outOfStockItems.length > 0) && (
-          <Alert variant="destructive">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Stock Alerts</AlertTitle>
-            <AlertDescription>
+        {products && (lowStockItems.length > 0 || outOfStockItems.length > 0) && (
+          <Alert variant="destructive" className="border-2 border-destructive shadow-lg min-h-fit" key="stock-alerts">
+            <AlertTriangle className="h-6 w-6 flex-shrink-0" />
+            <AlertTitle className="text-xl font-bold">⚠️ Stock Alerts - Immediate Action Required</AlertTitle>
+            <AlertDescription className="text-base">
               {outOfStockItems.length > 0 && (
-                <div className="mb-2">
-                  <strong>{outOfStockItems.length} items out of stock:</strong>{" "}
-                  {outOfStockItems.slice(0, 3).map(p => p.name).join(", ")}
-                  {outOfStockItems.length > 3 && ` and ${outOfStockItems.length - 3} more`}
+                <div key="out-of-stock" className="mb-3 p-3 bg-destructive/10 rounded-md border border-destructive/20">
+                  <p className="font-bold text-lg mb-2">🔴 {outOfStockItems.length} items out of stock:</p>
+                  <ul className="font-semibold space-y-1 ml-4 list-disc">
+                    {outOfStockItems.slice(0, 5).map(p => (
+                      <li key={p.id}>
+                        {p.name} (SKU: {p.sku}) - Stock: {p.stock}
+                      </li>
+                    ))}
+                    {outOfStockItems.length > 5 && (
+                      <li className="list-none ml-[-1rem]">...and {outOfStockItems.length - 5} more items</li>
+                    )}
+                  </ul>
                 </div>
               )}
               {lowStockItems.length > 0 && (
-                <div>
-                  <strong>{lowStockItems.length} items low on stock:</strong>{" "}
-                  {lowStockItems.slice(0, 3).map(p => p.name).join(", ")}
-                  {lowStockItems.length > 3 && ` and ${lowStockItems.length - 3} more`}
+                <div key="low-stock" className="p-3 bg-yellow-50 dark:bg-yellow-950/20 rounded-md border border-yellow-600/20">
+                  <p className="font-bold text-lg mb-2 text-yellow-700 dark:text-yellow-500">⚠️ {lowStockItems.length} items low on stock:</p>
+                  <ul className="font-semibold text-yellow-800 dark:text-yellow-400 space-y-1 ml-4 list-disc">
+                    {lowStockItems.slice(0, 5).map(p => (
+                      <li key={p.id}>
+                        {p.name} (SKU: {p.sku}) - Stock: {p.stock} / Reorder at: {p.reorderLevel || 10}
+                      </li>
+                    ))}
+                    {lowStockItems.length > 5 && (
+                      <li className="list-none ml-[-1rem]">...and {lowStockItems.length - 5} more items</li>
+                    )}
+                  </ul>
                 </div>
               )}
-              <Link href="/dashboard/products" className="underline font-medium mt-2 inline-block">
-                View Products →
-              </Link>
+              <div className="flex gap-3 mt-4">
+                <Link href="/dashboard/products">
+                  <Button variant="outline" className="font-bold">
+                    📦 View All Products →
+                  </Button>
+                </Link>
+                <Link href="/dashboard/reordering">
+                  <Button className="font-bold">
+                    🔄 View Reorder Suggestions →
+                  </Button>
+                </Link>
+              </div>
             </AlertDescription>
           </Alert>
         )}

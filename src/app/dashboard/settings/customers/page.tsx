@@ -137,7 +137,7 @@ export default function CustomersPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onSelect={() => handleEditClick(customer)}>Edit</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleEditClick(customer)}>Edit</DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleDelete(customer.id)} className="text-destructive">Delete</DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>

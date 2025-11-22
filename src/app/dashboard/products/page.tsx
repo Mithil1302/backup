@@ -196,8 +196,8 @@ export default function ProductsPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onSelect={() => handleEditClick(product)}>Edit</DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => setViewingStockProduct(product)}>
+                        <DropdownMenuItem onClick={() => handleEditClick(product)}>Edit</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setViewingStockProduct(product)}>
                           View Stock by Warehouse
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleDeleteProduct(product.id)} className="text-destructive">Delete</DropdownMenuItem>

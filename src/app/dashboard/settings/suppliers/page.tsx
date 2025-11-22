@@ -128,7 +128,7 @@ export default function SuppliersPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onSelect={() => handleEditClick(supplier)}>Edit</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleEditClick(supplier)}>Edit</DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleDelete(supplier.id)} className="text-destructive">Delete</DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>

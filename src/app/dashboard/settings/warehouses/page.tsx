@@ -3,14 +3,16 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { MoreHorizontal, PlusCircle } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { MoreHorizontal, PlusCircle, Package } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { useCollection, useFirestore, addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase";
 import { collection, doc } from "firebase/firestore";
-import type { Warehouse } from "@/lib/types";
+import type { Warehouse, Product } from "@/lib/types";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import React, { useState, useMemo } from "react";
 
 export default function WarehousesPage() {
@@ -19,8 +21,12 @@ export default function WarehousesPage() {
   const warehousesCollection = useMemo(() => firestore ? collection(firestore, 'warehouses') : null, [firestore]);
   const { data: warehouses, isLoading } = useCollection<Warehouse>(warehousesCollection);
   
+  const productsCollection = useMemo(() => firestore ? collection(firestore, 'products') : null, [firestore]);
+  const { data: products } = useCollection<Product>(productsCollection);
+  
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [editingWarehouse, setEditingWarehouse] = useState<Warehouse | null>(null);
+  const [viewingStockWarehouse, setViewingStockWarehouse] = useState<Warehouse | null>(null);
 
   const handleAddWarehouse = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -137,8 +143,8 @@ export default function WarehousesPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onSelect={() => handleEditClick(warehouse)}>Edit</DropdownMenuItem>
-                        <DropdownMenuItem>View Stock</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleEditClick(warehouse)}>Edit</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setViewingStockWarehouse(warehouse)}>View Stock</DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleDelete(warehouse.id)} className="text-destructive">Delete</DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -149,6 +155,70 @@ export default function WarehousesPage() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* View Stock Dialog */}
+      <Dialog open={!!viewingStockWarehouse} onOpenChange={() => setViewingStockWarehouse(null)}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5" />
+              Stock in {viewingStockWarehouse?.name}
+            </DialogTitle>
+            <DialogDescription>
+              Products available at {viewingStockWarehouse?.location}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-4">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Product</TableHead>
+                  <TableHead>SKU</TableHead>
+                  <TableHead className="text-right">Stock Level</TableHead>
+                  <TableHead className="text-right">Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {products && products.length > 0 ? (
+                  products
+                    .filter(product => {
+                      if (!viewingStockWarehouse) return false;
+                      const warehouseStock = product.warehouseStock?.[viewingStockWarehouse.id] || 0;
+                      return warehouseStock > 0;
+                    })
+                    .map(product => {
+                      const warehouseStock = product.warehouseStock?.[viewingStockWarehouse!.id] || 0;
+                      const isLowStock = product.reorderLevel && warehouseStock <= product.reorderLevel && warehouseStock > 0;
+                      
+                      return (
+                        <TableRow key={product.id}>
+                          <TableCell className="font-medium">{product.name}</TableCell>
+                          <TableCell className="text-muted-foreground">{product.sku}</TableCell>
+                          <TableCell className="text-right font-semibold">{warehouseStock}</TableCell>
+                          <TableCell className="text-right">
+                            {warehouseStock === 0 ? (
+                              <Badge variant="destructive">Out of Stock</Badge>
+                            ) : isLowStock ? (
+                              <Badge variant="outline" className="text-yellow-600 border-yellow-600">Low Stock</Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-green-600 border-green-600">In Stock</Badge>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center text-muted-foreground">
+                      No products in this warehouse
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
