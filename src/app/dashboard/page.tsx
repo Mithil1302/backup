@@ -3,7 +3,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { cn } from "@/lib/utils";
 import { Archive, ArrowRightLeft, Boxes, Package, Truck } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { useCollection, useFirestore, useUser } from "@/firebase";
@@ -16,7 +15,10 @@ export default function Dashboard() {
   const { user } = useUser();
 
   // Data Hooks
-  const productsCollection = useMemo(() => firestore ? collection(firestore, 'products') : null, [firestore]);
+  const productsCollection = useMemo(() => {
+    if (!firestore) return null;
+    return collection(firestore, 'products');
+  }, [firestore]);
   const { data: products } = useCollection<Product>(productsCollection);
 
   const receiptsQuery = useMemo(() => {
@@ -60,8 +62,6 @@ export default function Dashboard() {
       ...(deliveries || []).map(d => ({ ...d, type: 'Delivery', date: d.deliveryDate, ref: `DO-${d.id.substring(0, 6).toUpperCase()}` })),
       ...(transfers || []).map(t => ({ ...t, type: 'Transfer', date: t.transferDate, ref: `TRNS-${t.id.substring(0, 6).toUpperCase()}` })),
     ];
-    // The toMillis() function might not exist on a Timestamp if it's not a real Timestamp object yet.
-    // Firebase Timestamps are only guaranteed after data is fetched.
     return allActivities.sort((a, b) => (b.date?.toMillis() || 0) - (a.date?.toMillis() || 0)).slice(0, 7);
   }, [receipts, deliveries, transfers]);
   
