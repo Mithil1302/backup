@@ -28,7 +28,6 @@ import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import { signOut } from "firebase/auth";
 import { seedDatabase } from "@/lib/seed";
-import { collection, getDocs, query, limit } from "firebase/firestore";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 export default function DashboardLayout({
@@ -41,36 +40,32 @@ export default function DashboardLayout({
   const firestore = useFirestore();
   const router = useRouter();
 
-  const [isDataLoading, setIsDataLoading] = useState(true);
+  const [isDataSeeding, setIsDataSeeding] = useState(true);
 
   useEffect(() => {
-    if (isUserLoading) {
-      return; 
-    }
-
-    if (!user) {
+    // Redirect unauthenticated users
+    if (!isUserLoading && !user) {
       router.push('/');
-      return;
     }
+  }, [user, isUserLoading, router]);
 
+  useEffect(() => {
+    // Seed data only when we have a user and firestore instance
     const seedData = async () => {
-      if (!firestore || !user?.uid) return;
-
-      try {
-        console.log('Seeding database for user:', user.uid);
-        await seedDatabase(firestore, user.uid);
-        console.log('Database seeded successfully.');
-      } catch (error) {
-        console.error("Error seeding database: ", error);
-      } finally {
-        setIsDataLoading(false);
+      if (firestore && user?.uid) {
+        setIsDataSeeding(true);
+        try {
+          await seedDatabase(firestore, user.uid);
+        } catch (error) {
+          console.error("Error seeding database: ", error);
+        } finally {
+          setIsDataSeeding(false);
+        }
       }
     };
     
     seedData();
-
-  }, [user, isUserLoading, firestore, router]);
-
+  }, [user?.uid, firestore]); // Depend directly on uid and firestore
 
   const handleLogout = () => {
     if(auth) {
@@ -79,8 +74,9 @@ export default function DashboardLayout({
       });
     }
   };
-
-  if (isUserLoading || isDataLoading) {
+  
+  // Show loading screen while user is loading OR data is seeding
+  if (isUserLoading || isDataSeeding) {
     return (
         <div className="flex min-h-screen items-center justify-center">
             <p>Loading and seeding data...</p>
@@ -88,6 +84,7 @@ export default function DashboardLayout({
     );
   }
 
+  // If loading is finished and there's still no user, don't render the dashboard
   if (!user) {
     return null; 
   }
