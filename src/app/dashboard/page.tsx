@@ -16,16 +16,25 @@ export default function Dashboard() {
   const { user } = useUser();
 
   // Data Hooks
-  const productsCollection = useMemoFirebase(() => collection(firestore, 'products'), [firestore]);
+  const productsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'products') : null, [firestore]);
   const { data: products } = useCollection<Product>(productsCollection);
 
-  const receiptsCollection = useMemoFirebase(() => user ? query(collection(firestore, 'users', user.uid, 'receipts'), orderBy('receiptDate', 'desc'), limit(5)) : null, [firestore, user]);
+  const receiptsCollection = useMemoFirebase(() => {
+    if (!firestore || !user?.uid) return null;
+    return query(collection(firestore, 'users', user.uid, 'receipts'), orderBy('receiptDate', 'desc'), limit(5));
+  }, [firestore, user]);
   const { data: receipts } = useCollection<Receipt>(receiptsCollection);
 
-  const deliveriesCollection = useMemoFirebase(() => user ? query(collection(firestore, 'users', user.uid, 'deliveryOrders'), orderBy('deliveryDate', 'desc'), limit(5)) : null, [firestore, user]);
+  const deliveriesCollection = useMemoFirebase(() => {
+    if (!firestore || !user?.uid) return null;
+    return query(collection(firestore, 'users', user.uid, 'deliveryOrders'), orderBy('deliveryDate', 'desc'), limit(5));
+  }, [firestore, user]);
   const { data: deliveries } = useCollection<DeliveryOrder>(deliveriesCollection);
 
-  const transfersCollection = useMemoFirebase(() => user ? query(collection(firestore, 'users', user.uid, 'internalTransfers'), orderBy('transferDate', 'desc'), limit(5)) : null, [firestore, user]);
+  const transfersCollection = useMemoFirebase(() => {
+    if (!firestore || !user?.uid) return null;
+    return query(collection(firestore, 'users', user.uid, 'internalTransfers'), orderBy('transferDate', 'desc'), limit(5));
+  }, [firestore, user]);
   const { data: transfers } = useCollection<InternalTransfer>(transfersCollection);
 
 
@@ -51,7 +60,9 @@ export default function Dashboard() {
       ...(deliveries || []).map(d => ({ ...d, type: 'Delivery', date: d.deliveryDate, ref: `DO-${d.id.substring(0, 6).toUpperCase()}` })),
       ...(transfers || []).map(t => ({ ...t, type: 'Transfer', date: t.transferDate, ref: `TRNS-${t.id.substring(0, 6).toUpperCase()}` })),
     ];
-    return allActivities.sort((a, b) => b.date.toMillis() - a.date.toMillis()).slice(0, 7);
+    // The toMillis() function might not exist on a Timestamp if it's not a real Timestamp object yet.
+    // Firebase Timestamps are only guaranteed after data is fetched.
+    return allActivities.sort((a, b) => (b.date?.toMillis() || 0) - (a.date?.toMillis() || 0)).slice(0, 7);
   }, [receipts, deliveries, transfers]);
   
 

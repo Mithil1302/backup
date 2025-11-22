@@ -19,13 +19,16 @@ export default function TransfersPage() {
     const firestore = useFirestore();
     const { user } = useUser();
 
-    const transfersCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'internalTransfers') : null, [firestore, user]);
+    const transfersCollection = useMemoFirebase(() => {
+        if (!firestore || !user?.uid) return null;
+        return collection(firestore, 'users', user.uid, 'internalTransfers');
+    }, [firestore, user]);
     const { data: transfers, isLoading } = useCollection<InternalTransfer>(transfersCollection);
 
-    const warehousesCollection = useMemoFirebase(() => collection(firestore, 'warehouses'), [firestore]);
+    const warehousesCollection = useMemoFirebase(() => firestore ? collection(firestore, 'warehouses') : null, [firestore]);
     const { data: warehouses } = useCollection<Warehouse>(warehousesCollection);
 
-    const productsCollection = useMemoFirebase(() => collection(firestore, 'products'), [firestore]);
+    const productsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'products') : null, [firestore]);
     const { data: products } = useCollection<Product>(productsCollection);
 
     const [isSheetOpen, setIsSheetOpen] = useState(false);

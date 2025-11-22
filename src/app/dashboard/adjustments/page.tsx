@@ -21,13 +21,16 @@ export default function AdjustmentsPage() {
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [countedQty, setCountedQty] = useState<number | string>('');
 
-  const productsCollection = useMemoFirebase(() => collection(firestore, 'products'), [firestore]);
+  const productsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'products') : null, [firestore]);
   const { data: products } = useCollection<Product>(productsCollection);
 
-  const warehousesCollection = useMemoFirebase(() => collection(firestore, 'warehouses'), [firestore]);
+  const warehousesCollection = useMemoFirebase(() => firestore ? collection(firestore, 'warehouses') : null, [firestore]);
   const { data: warehouses } = useCollection<Warehouse>(warehousesCollection);
 
-  const adjustmentsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'stockAdjustments') : null, [firestore, user]);
+  const adjustmentsCollection = useMemoFirebase(() => {
+    if (!firestore || !user?.uid) return null;
+    return collection(firestore, 'users', user.uid, 'stockAdjustments');
+  }, [firestore, user]);
   const { data: adjustments, isLoading } = useCollection<StockAdjustment>(adjustmentsCollection);
 
   const selectedProduct = useMemo(() => {

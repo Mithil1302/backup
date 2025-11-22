@@ -22,10 +22,13 @@ export default function ReceiptsPage() {
     const { toast } = useToast();
     const [isSheetOpen, setIsSheetOpen] = useState(false);
 
-    const receiptsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'receipts') : null, [firestore, user]);
+    const receiptsCollection = useMemoFirebase(() => {
+        if (!firestore || !user?.uid) return null;
+        return collection(firestore, 'users', user.uid, 'receipts');
+    }, [firestore, user]);
     const { data: receipts, isLoading } = useCollection<Receipt>(receiptsCollection);
 
-    const suppliersCollection = useMemoFirebase(() => collection(firestore, 'suppliers'), [firestore]);
+    const suppliersCollection = useMemoFirebase(() => firestore ? collection(firestore, 'suppliers') : null, [firestore]);
     const { data: suppliers } = useCollection<Supplier>(suppliersCollection);
 
     const getStatusVariant = (status: string) => {
