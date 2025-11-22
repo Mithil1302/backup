@@ -28,10 +28,10 @@ export default function TransfersPage() {
     const { data: transfers, isLoading: isTransfersLoading } = useCollection<InternalTransfer>(transfersCollection);
 
     const warehousesCollection = useMemo(() => firestore ? collection(firestore, 'warehouses') : null, [firestore]);
-    const { data: warehouses } = useCollection<Warehouse>(warehousesCollection);
+    const { data: warehouses, isLoading: isWarehousesLoading } = useCollection<Warehouse>(warehousesCollection);
 
     const productsCollection = useMemo(() => firestore ? collection(firestore, 'products') : null, [firestore]);
-    const { data: products } = useCollection<Product>(productsCollection);
+    const { data: products, isLoading: isProductsLoading } = useCollection<Product>(productsCollection);
 
     const [isSheetOpen, setIsSheetOpen] = useState(false);
 
@@ -94,7 +94,7 @@ export default function TransfersPage() {
     const getWarehouseName = (id: string) => warehouses?.find(w => w.id === id)?.name || 'N/A';
     const getProductName = (id: string) => products?.find(p => p.id === id)?.name || 'N/A';
 
-    if (isUserLoading) {
+    if (isUserLoading || isWarehousesLoading || isProductsLoading) {
       return <div>Loading...</div>;
     }
     

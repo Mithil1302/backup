@@ -22,10 +22,10 @@ export default function AdjustmentsPage() {
   const [countedQty, setCountedQty] = useState<number | string>('');
 
   const productsCollection = useMemo(() => firestore ? collection(firestore, 'products') : null, [firestore]);
-  const { data: products } = useCollection<Product>(productsCollection);
+  const { data: products, isLoading: isProductsLoading } = useCollection<Product>(productsCollection);
 
   const warehousesCollection = useMemo(() => firestore ? collection(firestore, 'warehouses') : null, [firestore]);
-  const { data: warehouses } = useCollection<Warehouse>(warehousesCollection);
+  const { data: warehouses, isLoading: isWarehousesLoading } = useCollection<Warehouse>(warehousesCollection);
 
   const adjustmentsCollection = useMemo(() => {
     if (!firestore || !user?.uid) return null;
@@ -72,7 +72,7 @@ export default function AdjustmentsPage() {
   const getProductName = (productId: string) => products?.find(p => p.id === productId)?.name || 'Unknown Product';
   const getWarehouseName = (warehouseId: string) => warehouses?.find(w => w.id === warehouseId)?.name || 'Unknown Warehouse';
 
-  if (isUserLoading) {
+  if (isUserLoading || isProductsLoading || isWarehousesLoading) {
       return <div>Loading...</div>;
   }
 

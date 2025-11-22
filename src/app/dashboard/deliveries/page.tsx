@@ -29,7 +29,7 @@ export default function DeliveriesPage() {
     const { data: deliveries, isLoading: isDeliveriesLoading } = useCollection<DeliveryOrder>(deliveriesCollection);
 
     const customersCollection = useMemo(() => firestore ? collection(firestore, 'customers') : null, [firestore]);
-    const { data: customers } = useCollection<Customer>(customersCollection);
+    const { data: customers, isLoading: isCustomersLoading } = useCollection<Customer>(customersCollection);
 
     const getStatusVariant = (status: string) => {
         switch (status) {
@@ -70,7 +70,7 @@ export default function DeliveriesPage() {
       });
     };
 
-    if (isUserLoading) {
+    if (isUserLoading || isCustomersLoading) {
       return <div>Loading...</div>;
     }
     

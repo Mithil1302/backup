@@ -17,13 +17,13 @@ export default function Dashboard() {
     if (!firestore || !user?.uid) return null;
     return collection(firestore, 'users', user.uid, 'receipts');
   }, [firestore, user?.uid]);
-  const { data: receipts } = useCollection<Receipt>(receiptsCollection);
+  const { data: receipts, isLoading: isReceiptsLoading } = useCollection<Receipt>(receiptsCollection);
 
   const deliveriesCollection = useMemo(() => {
     if (!firestore || !user?.uid) return null;
     return collection(firestore, 'users', user.uid, 'deliveryOrders');
   }, [firestore, user?.uid]);
-  const { data: deliveries } = useCollection<DeliveryOrder>(deliveriesCollection);
+  const { data: deliveries, isLoading: isDeliveriesLoading } = useCollection<DeliveryOrder>(deliveriesCollection);
 
   const toReceiveCount = useMemo(() => {
     if (!receipts) return 0;
@@ -47,7 +47,7 @@ export default function Dashboard() {
       return deliveries.filter(d => d.status === 'Waiting').length;
   }, [deliveries]);
 
-  if (isUserLoading) {
+  if (isUserLoading || isReceiptsLoading || isDeliveriesLoading) {
     return <div>Loading...</div>;
   }
 

@@ -29,7 +29,7 @@ export default function ReceiptsPage() {
     const { data: receipts, isLoading: isReceiptsLoading } = useCollection<Receipt>(receiptsCollection);
 
     const suppliersCollection = useMemo(() => firestore ? collection(firestore, 'suppliers') : null, [firestore]);
-    const { data: suppliers } = useCollection<Supplier>(suppliersCollection);
+    const { data: suppliers, isLoading: isSuppliersLoading } = useCollection<Supplier>(suppliersCollection);
 
     const getStatusVariant = (status: string) => {
         switch (status) {
@@ -70,7 +70,7 @@ export default function ReceiptsPage() {
       });
     };
 
-    if (isUserLoading) {
+    if (isUserLoading || isSuppliersLoading) {
       return <div>Loading...</div>;
     }
 
