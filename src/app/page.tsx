@@ -1,12 +1,11 @@
 'use client';
 
 import Link from "next/link";
-import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Card, CardContent } from "@/components/ui/card";
 import { Logo } from "@/components/logo";
-import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { useAuth, initiateEmailSignIn, useUser } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import React, { useState, useEffect } from "react";
@@ -15,7 +14,6 @@ import { FirebaseError } from "firebase/app";
 
 export default function LoginPage() {
   const { toast } = useToast();
-  const loginBg = PlaceHolderImages.find(p => p.id === 'login-background');
   const auth = useAuth();
   const router = useRouter();
   const { user, isUserLoading } = useUser();
@@ -62,78 +60,80 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="w-full lg:grid lg:min-h-screen lg:grid-cols-2">
-      <div className="flex items-center justify-center py-12">
-        <div className="mx-auto grid w-[350px] gap-6">
-          <div className="grid gap-2 text-center">
-            <div className="flex justify-center">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <div className="w-full max-w-md">
+        <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-2 text-center">
+            <div className="flex justify-center mb-4">
               <Logo />
             </div>
-            <h1 className="text-3xl font-bold">Login to GreenGrocer IMS</h1>
-            <p className="text-balance text-muted-foreground">
-              Enter your email below to login to your account
+            <h1 className="text-3xl font-bold">Welcome Back</h1>
+            <p className="text-muted-foreground">
+              Sign in to your GreenGrocer IMS account
             </p>
           </div>
-          <form onSubmit={handleLogin} className="grid gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                placeholder="m@example.com"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-            <div className="grid gap-2">
-              <div className="flex items-center">
-                <Label htmlFor="password">Password</Label>
-                <Link
-                  href="/forgot-password"
-                  className="ml-auto inline-block text-sm underline"
-                >
-                  Forgot your password?
-                </Link>
-              </div>
-              <Input 
-                id="password" 
-                name="password" 
-                type="password" 
-                required 
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </div>
-            <Button type="submit" className="w-full">
-              Login
-            </Button>
-            <Button variant="outline" className="w-full" asChild>
-                <Link href="#">
-                    Login with Google
-                </Link>
-            </Button>
-          </form>
-          <div className="mt-4 text-center text-sm">
+          
+          <Card>
+            <CardContent className="pt-6">
+              <form onSubmit={handleLogin} className="grid gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    placeholder="m@example.com"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="password">Password</Label>
+                    <Link
+                      href="/forgot-password"
+                      className="text-sm text-primary hover:underline"
+                    >
+                      Forgot password?
+                    </Link>
+                  </div>
+                  <Input 
+                    id="password" 
+                    name="password" 
+                    type="password" 
+                    required 
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                </div>
+                <Button type="submit" className="w-full mt-2">
+                  Sign In
+                </Button>
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
+                  </div>
+                </div>
+                <Button variant="outline" className="w-full" asChild>
+                    <Link href="#">
+                        Google
+                    </Link>
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+          
+          <div className="text-center text-sm text-muted-foreground">
             Don&apos;t have an account?{" "}
-            <Link href="/signup" className="underline">
+            <Link href="/signup" className="text-primary hover:underline font-medium">
               Sign up
             </Link>
           </div>
         </div>
-      </div>
-      <div className="hidden bg-muted lg:block">
-        {loginBg && (
-            <Image
-                src={loginBg.imageUrl}
-                alt="Inventory background"
-                width="1920"
-                height="1080"
-                className="h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
-                data-ai-hint={loginBg.imageHint}
-            />
-        )}
       </div>
     </div>
   );

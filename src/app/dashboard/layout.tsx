@@ -12,7 +12,9 @@ import {
   Menu,
   Warehouse as WarehouseIcon,
   Users,
-  Truck
+  Truck,
+  History,
+  RefreshCw
 } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -99,6 +101,8 @@ export default function DashboardLayout({
     { href: "/dashboard/products", label: "Products", icon: Boxes },
     { href: "/dashboard/transfers", label: "Transfers", icon: ArrowRightLeft },
     { href: "/dashboard/adjustments", label: "Adjustments", icon: Settings },
+    { href: "/dashboard/history", label: "Move History", icon: History },
+    { href: "/dashboard/reordering", label: "Reordering", icon: RefreshCw },
   ];
 
   const settingsLinks = [

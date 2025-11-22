@@ -1,11 +1,51 @@
+'use client';
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageHeader } from "@/components/page-header";
 import { Separator } from "@/components/ui/separator";
+import { useFirestore, useUser } from "@/firebase";
+import { seedDatabase } from "@/lib/seed";
+import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
+import { Database } from "lucide-react";
 
 export default function ProfilePage() {
+  const firestore = useFirestore();
+  const { user } = useUser();
+  const { toast } = useToast();
+  const [isSeeding, setIsSeeding] = useState(false);
+
+  const handleSeedDatabase = async () => {
+    if (!firestore || !user?.uid) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Please ensure you are logged in.",
+      });
+      return;
+    }
+
+    setIsSeeding(true);
+    try {
+      await seedDatabase(firestore, user.uid);
+      toast({
+        title: "Database Seeded!",
+        description: "Sample data has been added to your database.",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Seeding Failed",
+        description: "There was an error seeding the database.",
+      });
+      console.error(error);
+    } finally {
+      setIsSeeding(false);
+    }
+  };
   return (
     <div className="flex flex-col gap-6">
       <PageHeader title="My Profile" />
@@ -55,6 +95,30 @@ export default function ProfilePage() {
             </CardContent>
         </Card>
       </div>
+
+      <Card className="border-orange-200 bg-orange-50">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Database className="h-5 w-5" />
+            Developer Tools
+          </CardTitle>
+          <CardDescription>
+            Seed the database with sample data for testing purposes
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button 
+            onClick={handleSeedDatabase} 
+            disabled={isSeeding}
+            variant="outline"
+          >
+            {isSeeding ? "Seeding..." : "Seed Database"}
+          </Button>
+          <p className="text-xs text-muted-foreground mt-2">
+            This will add sample products, categories, warehouses, suppliers, customers, and transactions to your database.
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -6,14 +6,17 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { MoreHorizontal, PlusCircle } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
-import { useCollection, useFirestore, addDocumentNonBlocking, useUser } from "@/firebase";
-import { collection, serverTimestamp } from "firebase/firestore";
+import { useCollection, useFirestore, addDocumentNonBlocking, useUser, updateDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase";
+import { collection, serverTimestamp, doc } from "firebase/firestore";
 import type { DeliveryOrder, Customer } from "@/lib/types";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
 import React, {useState, useMemo} from "react";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { Calendar, Truck, MapPin, Mail, Package } from "lucide-react";
 
 
 export default function DeliveriesPage() {
@@ -21,6 +24,8 @@ export default function DeliveriesPage() {
     const { user, isUserLoading } = useUser();
     const { toast } = useToast();
     const [isSheetOpen, setIsSheetOpen] = useState(false);
+    const [selectedDelivery, setSelectedDelivery] = useState<DeliveryOrder | null>(null);
+    const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
 
     const deliveriesCollection = useMemo(() => {
         if (!firestore || !user?.uid) return null;
@@ -35,6 +40,7 @@ export default function DeliveriesPage() {
         switch (status) {
           case "Done": return "default";
           case "Ready": return "secondary";
+          case "Packing": return "secondary";
           case "Waiting": return "outline";
           case "Draft": return "outline";
           case "Canceled": return "destructive";
@@ -68,6 +74,55 @@ export default function DeliveriesPage() {
         });
         setIsSheetOpen(false);
       });
+    };
+
+    const handleValidateDelivery = (deliveryId: string) => {
+      if (!firestore || !user?.uid) return;
+      const deliveryDoc = doc(firestore, 'users', user.uid, 'deliveryOrders', deliveryId);
+      updateDocumentNonBlocking(deliveryDoc, { status: 'Done' });
+      toast({
+        title: "Delivery Validated",
+        description: "The delivery has been marked as done.",
+      });
+    };
+
+    const handlePickItems = (deliveryId: string) => {
+      if (!firestore || !user?.uid) return;
+      const deliveryDoc = doc(firestore, 'users', user.uid, 'deliveryOrders', deliveryId);
+      updateDocumentNonBlocking(deliveryDoc, { status: 'Packing' });
+      toast({
+        title: "Items Picked",
+        description: "The items have been picked and are ready for packing.",
+      });
+    };
+
+    const handlePackItems = (deliveryId: string) => {
+      if (!firestore || !user?.uid) return;
+      const deliveryDoc = doc(firestore, 'users', user.uid, 'deliveryOrders', deliveryId);
+      updateDocumentNonBlocking(deliveryDoc, { status: 'Ready' });
+      toast({
+        title: "Items Packed",
+        description: "The delivery has been packed and is ready for shipment.",
+      });
+    };
+
+    const handleCancelDelivery = (deliveryId: string) => {
+      if (!firestore || !user?.uid) return;
+      const deliveryDoc = doc(firestore, 'users', user.uid, 'deliveryOrders', deliveryId);
+      updateDocumentNonBlocking(deliveryDoc, { status: 'Canceled' });
+      toast({
+        variant: "destructive",
+        title: "Delivery Canceled",
+        description: "The delivery has been canceled.",
+      });
+    };
+
+    const handleViewDetails = (deliveryId: string) => {
+      const delivery = deliveries?.find(d => d.id === deliveryId);
+      if (delivery) {
+        setSelectedDelivery(delivery);
+        setIsDetailDialogOpen(true);
+      }
     };
 
     if (isUserLoading || isCustomersLoading || isDeliveriesLoading) {
@@ -109,6 +164,126 @@ export default function DeliveriesPage() {
             </SheetContent>
         </Sheet>
       </PageHeader>
+
+      {/* Detail Dialog */}
+      <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Truck className="h-5 w-5" />
+              Delivery Order Details
+            </DialogTitle>
+            <DialogDescription>
+              Complete information about this delivery order
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedDelivery && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground">Reference Number</Label>
+                  <p className="text-lg font-semibold">DO-{selectedDelivery.id.substring(0, 8).toUpperCase()}</p>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground">Status</Label>
+                  <div>
+                    <Badge variant={getStatusVariant(selectedDelivery.status)} className="text-sm">
+                      {selectedDelivery.status}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="space-y-4">
+                <h3 className="font-semibold flex items-center gap-2">
+                  <MapPin className="h-4 w-4" />
+                  Customer Information
+                </h3>
+                {customers?.find(c => c.id === selectedDelivery.customerId) && (
+                  <div className="grid grid-cols-2 gap-4 pl-6">
+                    <div className="space-y-1">
+                      <Label className="text-muted-foreground text-xs">Name</Label>
+                      <p className="font-medium">{customers.find(c => c.id === selectedDelivery.customerId)?.name}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-muted-foreground text-xs flex items-center gap-1">
+                        <Mail className="h-3 w-3" />
+                        Email
+                      </Label>
+                      <p className="text-sm">{customers.find(c => c.id === selectedDelivery.customerId)?.contactEmail}</p>
+                    </div>
+                    <div className="space-y-1 col-span-2">
+                      <Label className="text-muted-foreground text-xs">Shipping Address</Label>
+                      <p className="text-sm">{customers.find(c => c.id === selectedDelivery.customerId)?.shippingAddress}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <Separator />
+
+              <div className="space-y-4">
+                <h3 className="font-semibold flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  Delivery Information
+                </h3>
+                <div className="grid grid-cols-2 gap-4 pl-6">
+                  <div className="space-y-1">
+                    <Label className="text-muted-foreground text-xs">Delivery Date</Label>
+                    <p className="font-medium">{selectedDelivery.deliveryDate?.toDate().toLocaleDateString('en-US', { 
+                      weekday: 'long', 
+                      year: 'numeric', 
+                      month: 'long', 
+                      day: 'numeric' 
+                    })}</p>
+                    <p className="text-xs text-muted-foreground">{selectedDelivery.deliveryDate?.toDate().toLocaleTimeString()}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-muted-foreground text-xs">Document ID</Label>
+                    <p className="text-xs font-mono bg-muted px-2 py-1 rounded">{selectedDelivery.id}</p>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setIsDetailDialogOpen(false)}>Close</Button>
+                {selectedDelivery.status === 'Draft' && (
+                  <Button variant="secondary" onClick={() => {
+                    handlePickItems(selectedDelivery.id);
+                    setIsDetailDialogOpen(false);
+                  }}>
+                    <Package className="h-4 w-4 mr-2" />
+                    Pick Items
+                  </Button>
+                )}
+                {selectedDelivery.status === 'Packing' && (
+                  <Button variant="secondary" onClick={() => {
+                    handlePackItems(selectedDelivery.id);
+                    setIsDetailDialogOpen(false);
+                  }}>
+                    <Package className="h-4 w-4 mr-2" />
+                    Pack Items
+                  </Button>
+                )}
+                {(selectedDelivery.status === 'Ready' || selectedDelivery.status === 'Waiting') && (
+                  <Button onClick={() => {
+                    handleValidateDelivery(selectedDelivery.id);
+                    setIsDetailDialogOpen(false);
+                  }}>
+                    <Truck className="h-4 w-4 mr-2" />
+                    Validate Delivery
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
       
       <Card>
         <CardHeader>
@@ -123,7 +298,7 @@ export default function DeliveriesPage() {
                 <TableHead>Customer</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Date</TableHead>
-                <TableHead><span className="sr-only">Actions</span></span ></TableHead>
+                <TableHead><span className="sr-only">Actions</span></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -144,10 +319,19 @@ export default function DeliveriesPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem>View Details</DropdownMenuItem>
-                        <DropdownMenuItem>Pick Items</DropdownMenuItem>
-                        <DropdownMenuItem>Validate</DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive">Cancel</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleViewDetails(delivery.id)}>View Details</DropdownMenuItem>
+                        {delivery.status === 'Draft' && (
+                          <DropdownMenuItem onClick={() => handlePickItems(delivery.id)}>Pick Items</DropdownMenuItem>
+                        )}
+                        {delivery.status === 'Packing' && (
+                          <DropdownMenuItem onClick={() => handlePackItems(delivery.id)}>Pack Items</DropdownMenuItem>
+                        )}
+                        {(delivery.status === 'Ready' || delivery.status === 'Waiting') && (
+                          <DropdownMenuItem onClick={() => handleValidateDelivery(delivery.id)}>Validate</DropdownMenuItem>
+                        )}
+                        {delivery.status !== 'Done' && delivery.status !== 'Canceled' && (
+                          <DropdownMenuItem className="text-destructive" onClick={() => handleCancelDelivery(delivery.id)}>Cancel</DropdownMenuItem>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>

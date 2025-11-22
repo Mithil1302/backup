@@ -6,15 +6,18 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { MoreHorizontal, PlusCircle } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
-import { useCollection, useFirestore, addDocumentNonBlocking, useUser } from "@/firebase";
-import { collection, serverTimestamp } from "firebase/firestore";
+import { useCollection, useFirestore, addDocumentNonBlocking, useUser, updateDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase";
+import { collection, serverTimestamp, doc } from "firebase/firestore";
 import type { InternalTransfer, Product, Warehouse } from "@/lib/types";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
 import React, { useState, useMemo } from "react";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { Calendar, ArrowRightLeft, Warehouse as WarehouseIcon, Package } from "lucide-react";
 
 export default function TransfersPage() {
     const firestore = useFirestore();
@@ -34,6 +37,8 @@ export default function TransfersPage() {
     const { data: products, isLoading: isProductsLoading } = useCollection<Product>(productsCollection);
 
     const [isSheetOpen, setIsSheetOpen] = useState(false);
+    const [selectedTransfer, setSelectedTransfer] = useState<InternalTransfer | null>(null);
+    const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
 
     const getStatusVariant = (status: string) => {
         switch (status) {
@@ -89,6 +94,35 @@ export default function TransfersPage() {
           });
           setIsSheetOpen(false);
       });
+    };
+
+    const handleValidateTransfer = (transferId: string) => {
+      if (!firestore || !user?.uid) return;
+      const transferDoc = doc(firestore, 'users', user.uid, 'internalTransfers', transferId);
+      updateDocumentNonBlocking(transferDoc, { status: 'Done' });
+      toast({
+        title: "Transfer Validated",
+        description: "The transfer has been completed.",
+      });
+    };
+
+    const handleCancelTransfer = (transferId: string) => {
+      if (!firestore || !user?.uid) return;
+      const transferDoc = doc(firestore, 'users', user.uid, 'internalTransfers', transferId);
+      updateDocumentNonBlocking(transferDoc, { status: 'Canceled' });
+      toast({
+        variant: "destructive",
+        title: "Transfer Canceled",
+        description: "The transfer has been canceled.",
+      });
+    };
+
+    const handleViewDetails = (transferId: string) => {
+      const transfer = transfers?.find(t => t.id === transferId);
+      if (transfer) {
+        setSelectedTransfer(transfer);
+        setIsDetailDialogOpen(true);
+      }
     };
 
     const getWarehouseName = (id: string) => warehouses?.find(w => w.id === id)?.name || 'N/A';
@@ -147,6 +181,133 @@ export default function TransfersPage() {
           </SheetContent>
         </Sheet>
       </PageHeader>
+
+      {/* Detail Dialog */}
+      <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ArrowRightLeft className="h-5 w-5" />
+              Internal Transfer Details
+            </DialogTitle>
+            <DialogDescription>
+              Complete information about this stock transfer
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedTransfer && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground">Reference Number</Label>
+                  <p className="text-lg font-semibold">TR-{selectedTransfer.id.substring(0, 8).toUpperCase()}</p>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground">Status</Label>
+                  <div>
+                    <Badge variant={getStatusVariant(selectedTransfer.status)} className="text-sm">
+                      {selectedTransfer.status}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="space-y-4">
+                <h3 className="font-semibold flex items-center gap-2">
+                  <Package className="h-4 w-4" />
+                  Product Information
+                </h3>
+                {products?.find(p => p.id === selectedTransfer.productId) && (
+                  <div className="grid grid-cols-2 gap-4 pl-6">
+                    <div className="space-y-1">
+                      <Label className="text-muted-foreground text-xs">Product Name</Label>
+                      <p className="font-medium">{getProductName(selectedTransfer.productId)}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-muted-foreground text-xs">SKU</Label>
+                      <p className="text-sm">{products.find(p => p.id === selectedTransfer.productId)?.sku}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-muted-foreground text-xs">Quantity</Label>
+                      <p className="text-lg font-semibold">{selectedTransfer.quantity} {products.find(p => p.id === selectedTransfer.productId)?.unitOfMeasure}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <Separator />
+
+              <div className="space-y-4">
+                <h3 className="font-semibold flex items-center gap-2">
+                  <WarehouseIcon className="h-4 w-4" />
+                  Warehouse Movement
+                </h3>
+                <div className="grid grid-cols-2 gap-6 pl-6">
+                  <div className="space-y-2">
+                    <Label className="text-muted-foreground text-xs">From (Source)</Label>
+                    <div className="p-3 bg-muted rounded-md">
+                      <p className="font-medium">{getWarehouseName(selectedTransfer.fromWarehouseId)}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {warehouses?.find(w => w.id === selectedTransfer.fromWarehouseId)?.location}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-muted-foreground text-xs">To (Destination)</Label>
+                    <div className="p-3 bg-muted rounded-md">
+                      <p className="font-medium">{getWarehouseName(selectedTransfer.toWarehouseId)}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {warehouses?.find(w => w.id === selectedTransfer.toWarehouseId)?.location}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="space-y-4">
+                <h3 className="font-semibold flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  Transfer Information
+                </h3>
+                <div className="grid grid-cols-2 gap-4 pl-6">
+                  <div className="space-y-1">
+                    <Label className="text-muted-foreground text-xs">Transfer Date</Label>
+                    <p className="font-medium">{selectedTransfer.transferDate?.toDate().toLocaleDateString('en-US', { 
+                      weekday: 'long', 
+                      year: 'numeric', 
+                      month: 'long', 
+                      day: 'numeric' 
+                    })}</p>
+                    <p className="text-xs text-muted-foreground">{selectedTransfer.transferDate?.toDate().toLocaleTimeString()}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-muted-foreground text-xs">Document ID</Label>
+                    <p className="text-xs font-mono bg-muted px-2 py-1 rounded">{selectedTransfer.id}</p>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setIsDetailDialogOpen(false)}>Close</Button>
+                {selectedTransfer.status !== 'Done' && selectedTransfer.status !== 'Canceled' && (
+                  <Button onClick={() => {
+                    handleValidateTransfer(selectedTransfer.id);
+                    setIsDetailDialogOpen(false);
+                  }}>
+                    Validate Transfer
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
       
       <Card>
         <CardHeader>
@@ -188,9 +349,9 @@ export default function TransfersPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem>View Details</DropdownMenuItem>
-                        <DropdownMenuItem>Validate</DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive">Cancel</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleViewDetails(transfer.id)}>View Details</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleValidateTransfer(transfer.id)}>Validate</DropdownMenuItem>
+                        <DropdownMenuItem className="text-destructive" onClick={() => handleCancelTransfer(transfer.id)}>Cancel</DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>

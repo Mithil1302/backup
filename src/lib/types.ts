@@ -25,6 +25,15 @@ export type Product = {
   stock: number;
   unitOfMeasure: string;
   reorderingRules?: string;
+  reorderLevel?: number;
+  warehouseStock?: { [warehouseId: string]: number };
+};
+
+export type WarehouseStock = {
+  id: string;
+  productId: string;
+  warehouseId: string;
+  quantity: number;
 };
 
 export type Warehouse = {
@@ -58,7 +67,7 @@ export type DeliveryOrder = {
     id: string;
     customerId: string;
     deliveryDate: Timestamp;
-    status: "Done" | "Waiting" | "Ready" | "Draft" | "Canceled";
+    status: "Done" | "Waiting" | "Ready" | "Packing" | "Draft" | "Canceled";
 }
 
 export type StockAdjustment = {
