@@ -53,27 +53,21 @@ export default function DashboardLayout({
       return;
     }
 
-    const checkAndSeedData = async () => {
+    const seedData = async () => {
       if (!firestore || !user?.uid) return;
 
       try {
-        const productsRef = collection(firestore, 'products');
-        const q = query(productsRef, limit(1));
-        const snapshot = await getDocs(q);
-        
-        if (snapshot.empty) {
-          console.log('Products collection is empty, seeding database...');
-          await seedDatabase(firestore, user.uid);
-          console.log('Database seeded successfully.');
-        }
+        console.log('Seeding database for user:', user.uid);
+        await seedDatabase(firestore, user.uid);
+        console.log('Database seeded successfully.');
       } catch (error) {
-        console.error("Error checking or seeding database: ", error);
+        console.error("Error seeding database: ", error);
       } finally {
         setIsDataLoading(false);
       }
     };
     
-    checkAndSeedData();
+    seedData();
 
   }, [user, isUserLoading, firestore, router]);
 
@@ -89,7 +83,7 @@ export default function DashboardLayout({
   if (isUserLoading || isDataLoading) {
     return (
         <div className="flex min-h-screen items-center justify-center">
-            <p>Loading...</p>
+            <p>Loading and seeding data...</p>
         </div>
     );
   }
