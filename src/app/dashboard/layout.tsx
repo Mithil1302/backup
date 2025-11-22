@@ -4,16 +4,12 @@ import Link from "next/link";
 import {
   ArrowRightLeft,
   Boxes,
-  Building,
-  Contact,
   LayoutDashboard,
   LogOut,
   Package,
   Settings,
-  SlidersHorizontal,
   Truck,
   User,
-  Warehouse,
   Menu,
 } from "lucide-react";
 
@@ -28,13 +24,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/logo";
-import { Separator } from "@/components/ui/separator";
 import { useAuth, useUser, useFirestore } from "@/firebase";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { signOut } from "firebase/auth";
 import { seedDatabase } from "@/lib/seed";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, query, limit } from "firebase/firestore";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 export default function DashboardLayout({
@@ -48,6 +43,7 @@ export default function DashboardLayout({
   const router = useRouter();
 
   const [isDataLoading, setIsDataLoading] = useState(true);
+  const [isNavigating, setIsNavigating] = useState(false);
 
   useEffect(() => {
     if (isUserLoading) {
@@ -55,20 +51,34 @@ export default function DashboardLayout({
     }
 
     if (!user) {
-      router.push('/');
-      return;
+        if (!isNavigating) {
+            setIsNavigating(true);
+            router.push('/');
+        }
+        return;
     }
 
     const checkAndSeedData = async () => {
       if (firestore && user.uid) {
-        const productsCollection = collection(firestore, 'products');
         try {
-            const productSnapshot = await getDocs(productsCollection);
-            if (productSnapshot.empty) {
-                console.log('No products found, seeding database...');
-                await seedDatabase(firestore, user.uid);
-                console.log('Database seeded successfully.');
+          // Check if any of the core collections are empty
+          const collectionsToCheck = ['products', 'warehouses', 'suppliers', 'customers'];
+          let shouldSeed = false;
+          for (const col of collectionsToCheck) {
+            const collectionRef = collection(firestore, col);
+            const q = query(collectionRef, limit(1));
+            const snapshot = await getDocs(q);
+            if (snapshot.empty) {
+              shouldSeed = true;
+              break; // Found an empty collection, no need to check further
             }
+          }
+
+          if (shouldSeed) {
+            console.log('One or more collections are empty, seeding database...');
+            await seedDatabase(firestore, user.uid);
+            console.log('Database seeded successfully.');
+          }
         } catch (error) {
             console.error("Error checking or seeding database: ", error);
         }
@@ -76,9 +86,10 @@ export default function DashboardLayout({
       setIsDataLoading(false);
     };
 
+    if (!isDataLoading) return;
     checkAndSeedData();
 
-  }, [user, isUserLoading, firestore, router]);
+  }, [user, isUserLoading, firestore, router, isNavigating, isDataLoading]);
 
 
   const handleLogout = () => {
