@@ -50,15 +50,15 @@ export default function ProductsPage() {
     } else {
       // Add new product
       if (!productsCollection) return;
-      addDocumentNonBlocking(productsCollection, productData);
-      toast({
-        title: "Product Added",
-        description: `${productData.name} has been added to your inventory.`,
+      addDocumentNonBlocking(productsCollection, productData).then(() => {
+        toast({
+            title: "Product Added",
+            description: `${productData.name} has been added to your inventory.`,
+        });
       });
     }
 
-    setIsSheetOpen(false);
-    setEditingProduct(null);
+    handleSheetClose();
   };
 
   const handleDeleteProduct = (productId: string) => {
