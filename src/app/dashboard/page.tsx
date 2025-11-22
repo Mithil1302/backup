@@ -16,7 +16,8 @@ export default function Dashboard() {
   const { user } = useUser();
 
   // Data Hooks
-  const { data: products } = useCollection<Product>(firestore ? collection(firestore, 'products') : null);
+  const productsCollection = useMemo(() => firestore ? collection(firestore, 'products') : null, [firestore]);
+  const { data: products } = useCollection<Product>(productsCollection);
 
   const receiptsQuery = useMemo(() => {
     if (!firestore || !user?.uid) return null;
@@ -39,8 +40,8 @@ export default function Dashboard() {
 
   // KPI Calculations
   const totalStock = useMemo(() => products?.reduce((acc, p) => acc + (p.stock || 0), 0) || 0, [products]);
-  const lowStockCount = useMemo(() => products?.filter(p => p.stock < 50 && p.stock > 0).length || 0, [products]);
-  const outOfStockCount = useMemo(() => products?.filter(p => p.stock === 0).length || 0, [products]);
+  const lowStockCount = useMemo(() => products?.filter(p => (p.stock || 0) < 50 && (p.stock || 0) > 0).length || 0, [products]);
+  const outOfStockCount = useMemo(() => products?.filter(p => (p.stock || 0) === 0).length || 0, [products]);
   const pendingReceipts = useMemo(() => receipts?.filter(r => r.status === 'Waiting' || r.status === 'Ready').length || 0, [receipts]);
   const pendingDeliveries = useMemo(() => deliveries?.filter(d => d.status === 'Waiting' || d.status === 'Ready').length || 0, [deliveries]);
   
