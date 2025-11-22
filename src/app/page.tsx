@@ -22,12 +22,14 @@ export default function LoginPage() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isNavigating, setIsNavigating] = useState(false);
 
   useEffect(() => {
-    if (!isUserLoading && user) {
+    if (!isUserLoading && user && !isNavigating) {
+      setIsNavigating(true);
       router.push('/dashboard');
     }
-  }, [user, isUserLoading, router]);
+  }, [user, isUserLoading, router, isNavigating]);
 
   const handleLogin = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();

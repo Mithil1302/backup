@@ -49,8 +49,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { signOut } from "firebase/auth";
 import { seedDatabase } from "@/lib/seed";
-import { collection } from "firebase/firestore";
-import type { Product } from "@/lib/types";
+import { collection, getDocs } from "firebase/firestore";
 
 export default function DashboardLayout({
   children,
@@ -62,32 +61,41 @@ export default function DashboardLayout({
   const firestore = useFirestore();
   const router = useRouter();
 
-  const [hasSeeded, setHasSeeded] = useState(false);
-
-  // Check if data exists to prevent re-seeding
-  const productsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return collection(firestore, 'products');
-  }, [firestore]);
-  const { data: products, isLoading: productsIsLoading } = useCollection<Product>(productsQuery);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (firestore && !productsIsLoading && products?.length === 0 && !hasSeeded) {
-      console.log('No products found, seeding database...');
-      seedDatabase(firestore).then(() => {
-        setHasSeeded(true);
-        console.log('Database seeded successfully.');
-      });
-    } else if (products && products.length > 0) {
-      if (!hasSeeded) setHasSeeded(true);
+    if (isUserLoading) {
+      return; // Wait until user status is resolved
     }
-  }, [productsIsLoading, products, firestore, hasSeeded]);
 
-  useEffect(() => {
-    if (!isUserLoading && !user) {
+    if (!user) {
       router.push('/');
+      return;
     }
-  }, [user, isUserLoading, router]);
+
+    // User is authenticated, now check for data and seed if necessary
+    const checkAndSeedData = async () => {
+      if (firestore) {
+        const productsCollection = collection(firestore, 'products');
+        const productSnapshot = await getDocs(productsCollection);
+        if (productSnapshot.empty) {
+          console.log('No products found, seeding database...');
+          try {
+            await seedDatabase(firestore);
+            console.log('Database seeded successfully.');
+          } catch (error) {
+            console.error("Error seeding database: ", error);
+          }
+        }
+      }
+      // Whether seeding happened or not, we are done loading.
+      setIsLoading(false);
+    };
+
+    checkAndSeedData();
+
+  }, [user, isUserLoading, firestore, router]);
+
 
   const handleLogout = () => {
     if(auth) {
@@ -97,12 +105,17 @@ export default function DashboardLayout({
     }
   };
 
-  if (isUserLoading || !user || (!productsIsLoading && !hasSeeded && products?.length === 0)) {
+  if (isLoading || isUserLoading) {
     return (
         <div className="flex min-h-screen items-center justify-center">
             <p>Loading...</p>
         </div>
     );
+  }
+
+  // Final check to ensure user is available before rendering children
+  if (!user) {
+    return null; // or a redirect component if preferred
   }
 
   return (
