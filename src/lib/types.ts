@@ -22,9 +22,9 @@ export type Product = {
   name: string;
   sku: string;
   categoryId: string;
+  stock: number;
   unitOfMeasure: string;
   reorderingRules?: string;
-  stock: number; // Added for simplicity on the client
 };
 
 export type Warehouse = {

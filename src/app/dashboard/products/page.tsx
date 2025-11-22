@@ -15,43 +15,47 @@ import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, d
 import { collection, doc } from "firebase/firestore";
 import type { Product } from "@/lib/types";
 import React, { useState, useEffect } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function ProductsPage() {
   const firestore = useFirestore();
+  const { toast } = useToast();
   const productsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'products') : null, [firestore]);
   const { data: products, isLoading } = useCollection<Product>(productsCollection);
   
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
-  const handleAddProduct = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!productsCollection) return;
     const formData = new FormData(event.currentTarget);
-    const newProduct = {
+    const productData = {
       name: formData.get('name') as string,
       sku: formData.get('sku') as string,
       categoryId: formData.get('category') as string,
       unitOfMeasure: formData.get('uom') as string,
       stock: Number(formData.get('stock') || 0),
     };
-    addDocumentNonBlocking(productsCollection, newProduct);
-    setIsSheetOpen(false);
-  };
-  
-  const handleUpdateProduct = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!firestore || !editingProduct) return;
-    const formData = new FormData(event.currentTarget);
-    const updatedProduct = {
-      name: formData.get('name') as string,
-      sku: formData.get('sku') as string,
-      categoryId: formData.get('category') as string,
-      unitOfMeasure: formData.get('uom') as string,
-      stock: Number(formData.get('stock') || 0),
-    };
-    const productDoc = doc(firestore, 'products', editingProduct.id);
-    updateDocumentNonBlocking(productDoc, updatedProduct);
+
+    if (editingProduct) {
+      if (!firestore) return;
+      // Update existing product
+      const productDoc = doc(firestore, 'products', editingProduct.id);
+      updateDocumentNonBlocking(productDoc, productData);
+      toast({
+        title: "Product Updated",
+        description: `${productData.name} has been updated.`,
+      });
+    } else {
+      // Add new product
+      if (!productsCollection) return;
+      addDocumentNonBlocking(productsCollection, productData);
+      toast({
+        title: "Product Added",
+        description: `${productData.name} has been added to your inventory.`,
+      });
+    }
+
     setIsSheetOpen(false);
     setEditingProduct(null);
   };
@@ -60,6 +64,11 @@ export default function ProductsPage() {
     if (!firestore) return;
     const productDoc = doc(firestore, 'products', productId);
     deleteDocumentNonBlocking(productDoc);
+    toast({
+        variant: "destructive",
+        title: "Product Deleted",
+        description: "The product has been removed from your inventory.",
+    });
   };
   
   const handleEditClick = (product: Product) => {
@@ -89,7 +98,7 @@ export default function ProductsPage() {
                 {editingProduct ? 'Update the details of your product.' : 'Fill in the details below to create a new product in your inventory.'}
               </SheetDescription>
             </SheetHeader>
-            <form onSubmit={editingProduct ? handleUpdateProduct : handleAddProduct} className="grid gap-4 py-4">
+            <form onSubmit={handleSubmit} className="grid gap-4 py-4">
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="name" className="text-right">Name</Label>
                 <Input name="name" id="name" defaultValue={editingProduct?.name} placeholder="Organic Bananas" className="col-span-3" required />
@@ -108,7 +117,7 @@ export default function ProductsPage() {
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="stock" className="text-right">Stock</Label>
-                <Input name="stock" id="stock" type="number" defaultValue={editingProduct?.stock} placeholder="0" className="col-span-3" />
+                <Input name="stock" id="stock" type="number" defaultValue={editingProduct?.stock || 0} placeholder="0" className="col-span-3" />
               </div>
               <div className="flex justify-end gap-2 mt-4">
                 <Button variant="outline" type="button" onClick={handleSheetClose}>Cancel</Button>
