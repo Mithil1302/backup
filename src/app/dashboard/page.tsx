@@ -13,7 +13,6 @@ export default function Dashboard() {
   const firestore = useFirestore();
   const { user } = useUser();
 
-  // Data Hooks
   const receiptsCollection = useMemo(() => {
     if (!firestore || !user?.uid) return null;
     return collection(firestore, 'users', user.uid, 'receipts');
@@ -27,19 +26,23 @@ export default function Dashboard() {
   const { data: deliveries } = useCollection<DeliveryOrder>(deliveriesCollection);
 
   const toReceiveCount = useMemo(() => {
+    if (!receipts) return 0;
     return receipts.filter(r => r.status === 'Waiting' || r.status === 'Ready').length;
   }, [receipts]);
   
   const lateReceipts = useMemo(() => {
+      if (!receipts) return 0;
       // This is a placeholder for late logic.
       return receipts.filter(r => r.status === 'Waiting').length;
   }, [receipts]);
 
   const toDeliverCount = useMemo(() => {
+      if (!deliveries) return 0;
       return deliveries.filter(d => d.status === 'Waiting' || d.status === 'Ready').length;
   }, [deliveries]);
   
   const lateDeliveries = useMemo(() => {
+      if (!deliveries) return 0;
       // This is a placeholder for late logic.
       return deliveries.filter(d => d.status === 'Waiting').length;
   }, [deliveries]);

@@ -38,6 +38,8 @@ export default function AdjustmentsPage() {
   }, [products, selectedProductId]);
 
   const currentStock = useMemo(() => {
+    // In a real app, this would be a live value from the product's document.
+    // For this prototype, we'll assume the seeded 'stock' is the current stock.
     return selectedProduct?.stock ?? 0;
   }, [selectedProduct]);
 
