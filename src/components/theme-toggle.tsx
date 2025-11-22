@@ -7,30 +7,36 @@ import { Button } from "@/components/ui/button";
 
 export function ThemeToggle() {
   const [theme, setTheme] = React.useState<"light" | "dark">("light");
+  const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
+    setMounted(true);
     const storedTheme = localStorage.getItem("theme") as "light" | "dark" | null;
     if (storedTheme) {
       setTheme(storedTheme);
-      if (storedTheme === "dark") {
-        document.documentElement.classList.add("dark");
-      }
     } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-        setTheme("dark");
-        document.documentElement.classList.add("dark");
+      setTheme("dark");
     }
   }, []);
 
-  const toggleTheme = () => {
-    const newTheme = theme === "light" ? "dark" : "light";
-    setTheme(newTheme);
-    localStorage.setItem("theme", newTheme);
-    if (newTheme === 'dark') {
+  React.useEffect(() => {
+    if (mounted) {
+      if (theme === "dark") {
         document.documentElement.classList.add("dark");
-    } else {
+      } else {
         document.documentElement.classList.remove("dark");
+      }
+      localStorage.setItem("theme", theme);
     }
+  }, [theme, mounted]);
+  
+  const toggleTheme = () => {
+    setTheme(theme === "light" ? "dark" : "light");
   };
+  
+  if (!mounted) {
+    return null;
+  }
 
   return (
     <div className="fixed bottom-4 right-4 z-50">
