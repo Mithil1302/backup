@@ -5,7 +5,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { MoreHorizontal, PlusCircle } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
-import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase";
+import { useCollection, useFirestore, addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase";
 import { collection, doc } from "firebase/firestore";
 import type { Supplier } from "@/lib/types";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -15,7 +15,7 @@ import React, { useState } from "react";
 
 export default function SuppliersPage() {
   const firestore = useFirestore();
-  const suppliersCollection = useMemoFirebase(() => collection(firestore, 'suppliers'), [firestore]);
+  const suppliersCollection = firestore ? collection(firestore, 'suppliers') : null;
   const { data: suppliers, isLoading } = useCollection<Supplier>(suppliersCollection);
 
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -23,6 +23,7 @@ export default function SuppliersPage() {
 
   const handleAddSupplier = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!suppliersCollection) return;
     const formData = new FormData(event.currentTarget);
     const newSupplier = {
       name: formData.get('name') as string,

@@ -6,11 +6,11 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { MoreHorizontal, PlusCircle } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
-import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, useUser } from "@/firebase";
+import { useCollection, useFirestore, addDocumentNonBlocking, useUser } from "@/firebase";
 import { collection, serverTimestamp } from "firebase/firestore";
 import type { InternalTransfer, Product, Warehouse } from "@/lib/types";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
@@ -21,23 +21,14 @@ export default function TransfersPage() {
     const { user } = useUser();
     const { toast } = useToast();
 
-    const transfersCollection = useMemoFirebase(() => {
+    const transfersCollection = useMemo(() => {
         if (!firestore || !user?.uid) return null;
         return collection(firestore, 'users', user.uid, 'internalTransfers');
     }, [firestore, user?.uid]);
     const { data: transfers, isLoading } = useCollection<InternalTransfer>(transfersCollection);
 
-    const warehousesCollection = useMemoFirebase(() => {
-        if (!firestore) return null;
-        return collection(firestore, 'warehouses');
-    }, [firestore]);
-    const { data: warehouses } = useCollection<Warehouse>(warehousesCollection);
-
-    const productsCollection = useMemoFirebase(() => {
-        if (!firestore) return null;
-        return collection(firestore, 'products');
-    }, [firestore]);
-    const { data: products } = useCollection<Product>(productsCollection);
+    const { data: warehouses } = useCollection<Warehouse>(firestore ? collection(firestore, 'warehouses') : null);
+    const { data: products } = useCollection<Product>(firestore ? collection(firestore, 'products') : null);
 
     const [isSheetOpen, setIsSheetOpen] = useState(false);
 

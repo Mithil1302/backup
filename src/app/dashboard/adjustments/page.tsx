@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PageHeader } from "@/components/page-header";
-import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, useUser } from "@/firebase";
+import { useCollection, useFirestore, addDocumentNonBlocking, useUser } from "@/firebase";
 import { collection, serverTimestamp } from "firebase/firestore";
 import type { Product, Warehouse, StockAdjustment } from "@/lib/types";
 import React, { useState, useMemo } from "react";
@@ -21,13 +21,10 @@ export default function AdjustmentsPage() {
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [countedQty, setCountedQty] = useState<number | string>('');
 
-  const productsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'products') : null, [firestore]);
-  const { data: products } = useCollection<Product>(productsCollection);
+  const { data: products } = useCollection<Product>(firestore ? collection(firestore, 'products') : null);
+  const { data: warehouses } = useCollection<Warehouse>(firestore ? collection(firestore, 'warehouses') : null);
 
-  const warehousesCollection = useMemoFirebase(() => firestore ? collection(firestore, 'warehouses') : null, [firestore]);
-  const { data: warehouses } = useCollection<Warehouse>(warehousesCollection);
-
-  const adjustmentsCollection = useMemoFirebase(() => {
+  const adjustmentsCollection = useMemo(() => {
     if (!firestore || !user?.uid) return null;
     return collection(firestore, 'users', user.uid, 'stockAdjustments');
   }, [firestore, user?.uid]);
@@ -39,8 +36,10 @@ export default function AdjustmentsPage() {
 
   // This is a simplified stock lookup. In a real app, you'd have a dedicated stock collection.
   const currentStock = useMemo(() => {
+    // The stock property was added to the Product type, ensure it exists.
     return selectedProduct?.stock ?? 0;
   }, [selectedProduct]);
+
 
   const difference = useMemo(() => {
     if (countedQty !== '') {

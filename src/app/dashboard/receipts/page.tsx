@@ -6,11 +6,11 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { MoreHorizontal, PlusCircle } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
-import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, useUser } from "@/firebase";
+import { useCollection, useFirestore, addDocumentNonBlocking, useUser } from "@/firebase";
 import { collection, serverTimestamp } from "firebase/firestore";
 import type { Receipt } from "@/lib/types";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Supplier } from "@/lib/types";
@@ -22,14 +22,13 @@ export default function ReceiptsPage() {
     const { toast } = useToast();
     const [isSheetOpen, setIsSheetOpen] = useState(false);
 
-    const receiptsCollection = useMemoFirebase(() => {
+    const receiptsCollection = useMemo(() => {
         if (!firestore || !user?.uid) return null;
         return collection(firestore, 'users', user.uid, 'receipts');
     }, [firestore, user?.uid]);
     const { data: receipts, isLoading } = useCollection<Receipt>(receiptsCollection);
 
-    const suppliersCollection = useMemoFirebase(() => firestore ? collection(firestore, 'suppliers') : null, [firestore]);
-    const { data: suppliers } = useCollection<Supplier>(suppliersCollection);
+    const { data: suppliers } = useCollection<Supplier>(firestore ? collection(firestore, 'suppliers') : null);
 
     const getStatusVariant = (status: string) => {
         switch (status) {

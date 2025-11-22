@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { cn } from "@/lib/utils";
 import { Archive, ArrowRightLeft, Boxes, Package, Truck } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
-import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
+import { useCollection, useFirestore, useUser } from "@/firebase";
 import { collection, limit, orderBy, query } from "firebase/firestore";
 import type { Product, Receipt, DeliveryOrder, InternalTransfer } from "@/lib/types";
 import { useMemo } from "react";
@@ -16,22 +16,21 @@ export default function Dashboard() {
   const { user } = useUser();
 
   // Data Hooks
-  const productsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'products') : null, [firestore]);
-  const { data: products } = useCollection<Product>(productsCollection);
+  const { data: products } = useCollection<Product>(firestore ? collection(firestore, 'products') : null);
 
-  const receiptsQuery = useMemoFirebase(() => {
+  const receiptsQuery = useMemo(() => {
     if (!firestore || !user?.uid) return null;
     return query(collection(firestore, 'users', user.uid, 'receipts'), orderBy('receiptDate', 'desc'), limit(5));
   }, [firestore, user?.uid]);
   const { data: receipts } = useCollection<Receipt>(receiptsQuery);
 
-  const deliveriesQuery = useMemoFirebase(() => {
+  const deliveriesQuery = useMemo(() => {
     if (!firestore || !user?.uid) return null;
     return query(collection(firestore, 'users', user.uid, 'deliveryOrders'), orderBy('deliveryDate', 'desc'), limit(5));
   }, [firestore, user?.uid]);
   const { data: deliveries } = useCollection<DeliveryOrder>(deliveriesQuery);
 
-  const transfersQuery = useMemoFirebase(() => {
+  const transfersQuery = useMemo(() => {
     if (!firestore || !user?.uid) return null;
     return query(collection(firestore, 'users', user.uid, 'internalTransfers'), orderBy('transferDate', 'desc'), limit(5));
   }, [firestore, user?.uid]);

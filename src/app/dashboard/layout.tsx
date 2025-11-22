@@ -44,7 +44,7 @@ import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/logo";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Separator } from "@/components/ui/separator";
-import { useAuth, useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { useAuth, useUser, useFirestore, useCollection } from "@/firebase";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { signOut } from "firebase/auth";
@@ -76,6 +76,7 @@ export default function DashboardLayout({
     // User is authenticated, now check for data and seed if necessary
     const checkAndSeedData = async () => {
       if (firestore) {
+        // Only check one collection to see if data exists.
         const productsCollection = collection(firestore, 'products');
         const productSnapshot = await getDocs(productsCollection);
         if (productSnapshot.empty) {
@@ -88,7 +89,7 @@ export default function DashboardLayout({
           }
         }
       }
-      // Whether seeding happened or not, we are done loading.
+      // Whether seeding happened or not, we are done with this loading phase.
       setIsLoading(false);
     };
 
@@ -105,7 +106,8 @@ export default function DashboardLayout({
     }
   };
 
-  if (isLoading || isUserLoading) {
+  // The main loading condition now covers both auth and initial data seeding.
+  if (isUserLoading || isLoading) {
     return (
         <div className="flex min-h-screen items-center justify-center">
             <p>Loading...</p>
@@ -115,7 +117,8 @@ export default function DashboardLayout({
 
   // Final check to ensure user is available before rendering children
   if (!user) {
-    return null; // or a redirect component if preferred
+    // This case should theoretically be covered by the effect redirect, but it's a good safeguard.
+    return null; 
   }
 
   return (

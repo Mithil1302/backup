@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { MoreHorizontal, PlusCircle } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { cn } from "@/lib/utils";
-import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase";
+import { useCollection, useFirestore, addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase";
 import { collection, doc } from "firebase/firestore";
 import type { Product } from "@/lib/types";
 import React, { useState, useEffect } from "react";
@@ -20,7 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 export default function ProductsPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
-  const productsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'products') : null, [firestore]);
+  const productsCollection = firestore ? collection(firestore, 'products') : null;
   const { data: products, isLoading } = useCollection<Product>(productsCollection);
   
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -28,6 +28,8 @@ export default function ProductsPage() {
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!firestore) return;
+
     const formData = new FormData(event.currentTarget);
     const productData = {
       name: formData.get('name') as string,
@@ -38,7 +40,6 @@ export default function ProductsPage() {
     };
 
     if (editingProduct) {
-      if (!firestore) return;
       // Update existing product
       const productDoc = doc(firestore, 'products', editingProduct.id);
       updateDocumentNonBlocking(productDoc, productData);
@@ -116,7 +117,7 @@ export default function ProductsPage() {
                 <Input name="uom" id="uom" defaultValue={editingProduct?.unitOfMeasure} placeholder="kg" className="col-span-3" required/>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="stock" className="text-right">Stock</Label>
+                <Label htmlFor="stock" className="text-right">Initial Stock</Label>
                 <Input name="stock" id="stock" type="number" defaultValue={editingProduct?.stock || 0} placeholder="0" className="col-span-3" />
               </div>
               <div className="flex justify-end gap-2 mt-4">
