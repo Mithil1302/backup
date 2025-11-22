@@ -1,0 +1,179 @@
+import Link from "next/link";
+import {
+  ArrowRightLeft,
+  Boxes,
+  LayoutDashboard,
+  LogOut,
+  Package,
+  Settings,
+  SlidersHorizontal,
+  Truck,
+  User,
+  Warehouse,
+} from "lucide-react";
+
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarHeader,
+  SidebarInset,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
+  SidebarProvider,
+  SidebarTrigger,
+  SidebarFooter,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem
+} from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
+import { Logo } from "@/components/logo";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Separator } from "@/components/ui/separator";
+
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <SidebarProvider>
+      <Sidebar>
+        <SidebarHeader>
+          <div className="flex items-center gap-2 p-2">
+            <Logo />
+            <span className="text-lg font-semibold">GreenGrocer IMS</span>
+          </div>
+        </SidebarHeader>
+        <SidebarContent>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild tooltip="Dashboard" isActive>
+                <Link href="/dashboard">
+                  <LayoutDashboard />
+                  <span>Dashboard</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild tooltip="Products">
+                <Link href="/dashboard/products">
+                  <Boxes />
+                  <span>Products</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+
+            <Collapsible className="w-full">
+              <CollapsibleTrigger asChild>
+                 <SidebarMenuItem>
+                    <SidebarMenuButton className="justify-start" tooltip="Operations">
+                      <Package />
+                      <span>Operations</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                 <SidebarMenuSub>
+                    <SidebarMenuSubItem>
+                        <SidebarMenuSubButton asChild>
+                            <Link href="/dashboard/receipts"><Truck /> Receipts</Link>
+                        </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                     <SidebarMenuSubItem>
+                        <SidebarMenuSubButton asChild>
+                            <Link href="/dashboard/deliveries"><Package /> Deliveries</Link>
+                        </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                     <SidebarMenuSubItem>
+                        <SidebarMenuSubButton asChild>
+                            <Link href="/dashboard/transfers"><ArrowRightLeft /> Transfers</Link>
+                        </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                     <SidebarMenuSubItem>
+                        <SidebarMenuSubButton asChild>
+                            <Link href="/dashboard/adjustments"><SlidersHorizontal /> Adjustments</Link>
+                        </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                </SidebarMenuSub>
+              </CollapsibleContent>
+            </Collapsible>
+            
+            <Collapsible className="w-full">
+              <CollapsibleTrigger asChild>
+                 <SidebarMenuItem>
+                    <SidebarMenuButton className="justify-start" tooltip="Settings">
+                      <Settings />
+                      <span>Settings</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                 <SidebarMenuSub>
+                    <SidebarMenuSubItem>
+                        <SidebarMenuSubButton asChild>
+                            <Link href="/dashboard/settings/warehouses"><Warehouse /> Warehouses</Link>
+                        </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                </SidebarMenuSub>
+              </CollapsibleContent>
+            </Collapsible>
+          </SidebarMenu>
+        </SidebarContent>
+        <SidebarFooter>
+            <Separator className="my-2" />
+             <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="w-full justify-start gap-2 px-2">
+                        <Avatar className="h-8 w-8">
+                            <AvatarImage src="https://picsum.photos/seed/user/40/40" alt="User" />
+                            <AvatarFallback>JD</AvatarFallback>
+                        </Avatar>
+                        <div className="text-left">
+                            <p className="font-medium text-sm">John Doe</p>
+                            <p className="text-xs text-muted-foreground">john.doe@example.com</p>
+                        </div>
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56" align="end" forceMount>
+                    <DropdownMenuLabel className="font-normal">My Account</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                        <Link href="/dashboard/profile"><User className="mr-2 h-4 w-4" />Profile</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                         <Link href="/dashboard/settings"><Settings className="mr-2 h-4 w-4" />Settings</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                        <Link href="/"><LogOut className="mr-2 h-4 w-4" />Log out</Link>
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+        </SidebarFooter>
+      </Sidebar>
+      <SidebarInset>
+        <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6 py-2">
+          <SidebarTrigger className="md:hidden" />
+          <div className="flex-1">
+             {/* Can add breadcrumbs or page title here if needed */}
+          </div>
+          <div className="flex items-center gap-4">
+             {/* Can add global search or other header items here */}
+          </div>
+        </header>
+        <main className="p-4 sm:px-6 sm:py-0">{children}</main>
+      </SidebarInset>
+    </SidebarProvider>
+  );
+}

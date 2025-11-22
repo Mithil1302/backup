@@ -1,3 +1,10 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "login-background",
+      "description": "A background image for the login screen showing a modern grocery warehouse.",
+      "imageUrl": "https://images.unsplash.com/photo-1601598505513-7489a6272d2a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8d2FyZWhvdXNlJTIwZ3JvY2VyeXxlbnwwfHx8fDE3NjM3OTI0MTh8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "warehouse grocery"
+    }
+  ]
 }
