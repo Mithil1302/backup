@@ -8,7 +8,6 @@ import {
   LogOut,
   Package,
   Settings,
-  Truck,
   User,
   Menu,
 } from "lucide-react";
@@ -43,7 +42,6 @@ export default function DashboardLayout({
   const router = useRouter();
 
   const [isDataLoading, setIsDataLoading] = useState(true);
-  const [isNavigating, setIsNavigating] = useState(false);
 
   useEffect(() => {
     if (isUserLoading) {
@@ -51,45 +49,33 @@ export default function DashboardLayout({
     }
 
     if (!user) {
-        if (!isNavigating) {
-            setIsNavigating(true);
-            router.push('/');
-        }
-        return;
+      router.push('/');
+      return;
     }
 
     const checkAndSeedData = async () => {
-      if (firestore && user.uid) {
-        try {
-          // Check if any of the core collections are empty
-          const collectionsToCheck = ['products', 'warehouses', 'suppliers', 'customers'];
-          let shouldSeed = false;
-          for (const col of collectionsToCheck) {
-            const collectionRef = collection(firestore, col);
-            const q = query(collectionRef, limit(1));
-            const snapshot = await getDocs(q);
-            if (snapshot.empty) {
-              shouldSeed = true;
-              break; // Found an empty collection, no need to check further
-            }
-          }
+      if (!firestore || !user?.uid) return;
 
-          if (shouldSeed) {
-            console.log('One or more collections are empty, seeding database...');
-            await seedDatabase(firestore, user.uid);
-            console.log('Database seeded successfully.');
-          }
-        } catch (error) {
-            console.error("Error checking or seeding database: ", error);
+      try {
+        const productsRef = collection(firestore, 'products');
+        const q = query(productsRef, limit(1));
+        const snapshot = await getDocs(q);
+        
+        if (snapshot.empty) {
+          console.log('Products collection is empty, seeding database...');
+          await seedDatabase(firestore, user.uid);
+          console.log('Database seeded successfully.');
         }
+      } catch (error) {
+        console.error("Error checking or seeding database: ", error);
+      } finally {
+        setIsDataLoading(false);
       }
-      setIsDataLoading(false);
     };
-
-    if (!isDataLoading) return;
+    
     checkAndSeedData();
 
-  }, [user, isUserLoading, firestore, router, isNavigating, isDataLoading]);
+  }, [user, isUserLoading, firestore, router]);
 
 
   const handleLogout = () => {
