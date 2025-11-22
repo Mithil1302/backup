@@ -74,7 +74,7 @@ export function useCollection<T = any>(
   useEffect(() => {
     // If the query/ref is explicitly null or undefined, it means we are waiting for dependencies.
     // Set loading to true and clear previous data/errors.
-    if (!targetRefOrQuery) {
+    if (!targetRefOrQuery || !queryKey) {
       setData([]);
       setIsLoading(true);
       setError(null);

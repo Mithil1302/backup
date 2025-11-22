@@ -45,7 +45,7 @@ export function useDoc<T = any>(
   const docPath = useMemo(() => docRef?.path, [docRef]);
 
   useEffect(() => {
-    if (!docRef) {
+    if (!docRef || !docPath) {
       setData(null);
       setIsLoading(true);
       setError(null);

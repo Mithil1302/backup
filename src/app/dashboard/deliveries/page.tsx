@@ -70,7 +70,7 @@ export default function DeliveriesPage() {
       });
     };
 
-    if (isUserLoading || isCustomersLoading) {
+    if (isUserLoading || isCustomersLoading || isDeliveriesLoading) {
       return <div>Loading...</div>;
     }
     
