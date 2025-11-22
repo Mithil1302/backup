@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 
 export default function AdjustmentsPage() {
   const firestore = useFirestore();
-  const { user } = useUser();
+  const { user, isUserLoading } = useUser();
   const { toast } = useToast();
 
   const [selectedWarehouseId, setSelectedWarehouseId] = useState<string | null>(null);
@@ -31,7 +31,7 @@ export default function AdjustmentsPage() {
     if (!firestore || !user?.uid) return null;
     return collection(firestore, 'users', user.uid, 'stockAdjustments');
   }, [firestore, user?.uid]);
-  const { data: adjustments, isLoading } = useCollection<StockAdjustment>(adjustmentsCollection);
+  const { data: adjustments, isLoading: isAdjustmentsLoading } = useCollection<StockAdjustment>(adjustmentsCollection);
 
   const selectedProduct = useMemo(() => {
     return products?.find(p => p.id === selectedProductId);
@@ -71,6 +71,10 @@ export default function AdjustmentsPage() {
 
   const getProductName = (productId: string) => products?.find(p => p.id === productId)?.name || 'Unknown Product';
   const getWarehouseName = (warehouseId: string) => warehouses?.find(w => w.id === warehouseId)?.name || 'Unknown Warehouse';
+
+  if (isUserLoading) {
+      return <div>Loading...</div>;
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -143,8 +147,8 @@ export default function AdjustmentsPage() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {isLoading && <TableRow><TableCell colSpan={4} className="text-center">Loading...</TableCell></TableRow>}
-                        {!isLoading && adjustments.length === 0 && <TableRow><TableCell colSpan={4} className="text-center">No adjustments found.</TableCell></TableRow>}
+                        {isAdjustmentsLoading && <TableRow><TableCell colSpan={4} className="text-center">Loading...</TableCell></TableRow>}
+                        {!isAdjustmentsLoading && adjustments.length === 0 && <TableRow><TableCell colSpan={4} className="text-center">No adjustments found.</TableCell></TableRow>}
                         {adjustments.map(adj => (
                            <TableRow key={adj.id}>
                                 <TableCell>{getProductName(adj.productId)}</TableCell>

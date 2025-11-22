@@ -11,7 +11,7 @@ import { ArrowRight } from "lucide-react";
 
 export default function Dashboard() {
   const firestore = useFirestore();
-  const { user } = useUser();
+  const { user, isUserLoading } = useUser();
 
   const receiptsCollection = useMemo(() => {
     if (!firestore || !user?.uid) return null;
@@ -47,40 +47,44 @@ export default function Dashboard() {
       return deliveries.filter(d => d.status === 'Waiting').length;
   }, [deliveries]);
 
+  if (isUserLoading) {
+    return <div>Loading...</div>;
+  }
+
   return (
-    <>
-      <PageHeader title="Dashboard" />
-      <div className="grid gap-8 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Receipt</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-4">
-            <Button variant="outline" className="w-fit">
-              {toReceiveCount} to receive
-            </Button>
-            <div className="flex items-center gap-4 text-sm">
-                <span>{lateReceipts} Late</span>
-                <span>{receipts.length} operations</span>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-            <CardHeader>
-                <CardTitle>Delivery</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-4">
-                <Button variant="outline" className="w-fit">
-                    {toDeliverCount} to Deliver
-                </Button>
-                 <div className="flex items-center gap-4 text-sm">
-                    <span>{lateDeliveries} Late</span>
-                    <span>{deliveries.filter(d => d.status === 'Waiting').length} waiting</span>
-                    <span>{deliveries.length} operations</span>
-                </div>
-            </CardContent>
-        </Card>
+    <div className="flex flex-col gap-6">
+        <PageHeader title="Dashboard" />
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Receipt</CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-4">
+                    <Button variant="outline" className="w-fit">
+                    {toReceiveCount} to receive
+                    </Button>
+                    <div className="flex items-center gap-4 text-sm">
+                        <span>{lateReceipts} Late</span>
+                        <span>{receipts.length} operations</span>
+                    </div>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader>
+                    <CardTitle>Delivery</CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-4">
+                    <Button variant="outline" className="w-fit">
+                        {toDeliverCount} to Deliver
+                    </Button>
+                    <div className="flex items-center gap-4 text-sm">
+                        <span>{lateDeliveries} Late</span>
+                        <span>{deliveries.filter(d => d.status === 'Waiting').length} waiting</span>
+                        <span>{deliveries.length} operations</span>
+                    </div>
+                </CardContent>
+            </Card>
       </div>
-    </>
+    </div>
   );
 }

@@ -18,7 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 
 export default function DeliveriesPage() {
     const firestore = useFirestore();
-    const { user } = useUser();
+    const { user, isUserLoading } = useUser();
     const { toast } = useToast();
     const [isSheetOpen, setIsSheetOpen] = useState(false);
 
@@ -26,7 +26,7 @@ export default function DeliveriesPage() {
         if (!firestore || !user?.uid) return null;
         return collection(firestore, 'users', user.uid, 'deliveryOrders');
     }, [firestore, user?.uid]);
-    const { data: deliveries, isLoading } = useCollection<DeliveryOrder>(deliveriesCollection);
+    const { data: deliveries, isLoading: isDeliveriesLoading } = useCollection<DeliveryOrder>(deliveriesCollection);
 
     const customersCollection = useMemo(() => firestore ? collection(firestore, 'customers') : null, [firestore]);
     const { data: customers } = useCollection<Customer>(customersCollection);
@@ -69,6 +69,10 @@ export default function DeliveriesPage() {
         setIsSheetOpen(false);
       });
     };
+
+    if (isUserLoading) {
+      return <div>Loading...</div>;
+    }
     
   return (
     <div className="flex flex-col gap-6">
@@ -123,8 +127,8 @@ export default function DeliveriesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading && <TableRow><TableCell colSpan={5} className="text-center">Loading...</TableCell></TableRow>}
-              {!isLoading && deliveries.length === 0 && <TableRow><TableCell colSpan={5} className="text-center">No delivery orders found.</TableCell></TableRow>}
+              {isDeliveriesLoading && <TableRow><TableCell colSpan={5} className="text-center">Loading...</TableCell></TableRow>}
+              {!isDeliveriesLoading && deliveries.length === 0 && <TableRow><TableCell colSpan={5} className="text-center">No delivery orders found.</TableCell></TableRow>}
               {deliveries.map((delivery) => (
                 <TableRow key={delivery.id}>
                   <TableCell className="font-medium">DO-{delivery.id.substring(0, 6).toUpperCase()}</TableCell>

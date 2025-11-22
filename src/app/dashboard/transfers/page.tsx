@@ -18,14 +18,14 @@ import { useToast } from "@/hooks/use-toast";
 
 export default function TransfersPage() {
     const firestore = useFirestore();
-    const { user } = useUser();
+    const { user, isUserLoading } = useUser();
     const { toast } = useToast();
 
     const transfersCollection = useMemo(() => {
         if (!firestore || !user?.uid) return null;
         return collection(firestore, 'users', user.uid, 'internalTransfers');
     }, [firestore, user?.uid]);
-    const { data: transfers, isLoading } = useCollection<InternalTransfer>(transfersCollection);
+    const { data: transfers, isLoading: isTransfersLoading } = useCollection<InternalTransfer>(transfersCollection);
 
     const warehousesCollection = useMemo(() => firestore ? collection(firestore, 'warehouses') : null, [firestore]);
     const { data: warehouses } = useCollection<Warehouse>(warehousesCollection);
@@ -93,6 +93,10 @@ export default function TransfersPage() {
 
     const getWarehouseName = (id: string) => warehouses?.find(w => w.id === id)?.name || 'N/A';
     const getProductName = (id: string) => products?.find(p => p.id === id)?.name || 'N/A';
+
+    if (isUserLoading) {
+      return <div>Loading...</div>;
+    }
     
   return (
     <div className="flex flex-col gap-6">
@@ -164,8 +168,8 @@ export default function TransfersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading && <TableRow><TableCell colSpan={8} className="text-center">Loading...</TableCell></TableRow>}
-              {!isLoading && transfers.length === 0 && <TableRow><TableCell colSpan={8} className="text-center">No transfers found.</TableCell></TableRow>}
+              {isTransfersLoading && <TableRow><TableCell colSpan={8} className="text-center">Loading...</TableCell></TableRow>}
+              {!isTransfersLoading && transfers.length === 0 && <TableRow><TableCell colSpan={8} className="text-center">No transfers found.</TableCell></TableRow>}
               {transfers.map((transfer) => (
                 <TableRow key={transfer.id}>
                   <TableCell className="font-medium">TR-{transfer.id.substring(0,6).toUpperCase()}</TableCell>                  

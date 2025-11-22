@@ -18,7 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 
 export default function ReceiptsPage() {
     const firestore = useFirestore();
-    const { user } = useUser();
+    const { user, isUserLoading } = useUser();
     const { toast } = useToast();
     const [isSheetOpen, setIsSheetOpen] = useState(false);
 
@@ -26,7 +26,7 @@ export default function ReceiptsPage() {
         if (!firestore || !user?.uid) return null;
         return collection(firestore, 'users', user.uid, 'receipts');
     }, [firestore, user?.uid]);
-    const { data: receipts, isLoading } = useCollection<Receipt>(receiptsCollection);
+    const { data: receipts, isLoading: isReceiptsLoading } = useCollection<Receipt>(receiptsCollection);
 
     const suppliersCollection = useMemo(() => firestore ? collection(firestore, 'suppliers') : null, [firestore]);
     const { data: suppliers } = useCollection<Supplier>(suppliersCollection);
@@ -69,6 +69,10 @@ export default function ReceiptsPage() {
         setIsSheetOpen(false);
       });
     };
+
+    if (isUserLoading) {
+      return <div>Loading...</div>;
+    }
 
   return (
     <div className="flex flex-col gap-6">
@@ -123,8 +127,8 @@ export default function ReceiptsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading && <TableRow><TableCell colSpan={5} className="text-center">Loading...</TableCell></TableRow>}
-              {!isLoading && receipts.length === 0 && <TableRow><TableCell colSpan={5} className="text-center">No receipts found.</TableCell></TableRow>}
+              {isReceiptsLoading && <TableRow><TableCell colSpan={5} className="text-center">Loading...</TableCell></TableRow>}
+              {!isReceiptsLoading && receipts.length === 0 && <TableRow><TableCell colSpan={5} className="text-center">No receipts found.</TableCell></TableRow>}
               {receipts.map((receipt) => (
                 <TableRow key={receipt.id}>
                   <TableCell className="font-medium">RCPT-{receipt.id.substring(0, 6).toUpperCase()}</TableCell>
