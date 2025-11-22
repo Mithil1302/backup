@@ -1,0 +1,216 @@
+/**
+ * Core Philosophy: This ruleset enforces a dual security model. Core business data
+ * (like products, categories, suppliers) is accessible to any authenticated user,
+ * allowing for collaborative inventory management in a trusted environment. All
+ * user-specific operational data (receipts, delivery orders, adjustments) is
+ * strictly segregated and nested under a /users/{userId} path, enforcing a
+ * user-ownership model where only the creator can access or modify their own documents.
+ *
+ * Data Structure:
+ * - Top-level collections like /products, /categories, /suppliers, /warehouses, and
+ *   /customers store shared business data.
+ * - A top-level /users collection serves as a container for user-specific subcollections.
+ * - All transactional documents (Receipts, DeliveryOrders, etc.) are stored in
+ *   subcollections within a specific user's path, e.g., /users/{userId}/receipts/{receiptId}.
+ *
+ * Key Security Decisions:
+ * - Authenticated-Only Access: All access to the database, including reads of
+ *   public data like products, requires user authentication. There is no anonymous access.
+ * - Strict User Ownership: Any data under /users/{userId} is accessible only to the
+ *   user whose UID matches {userId}. This path-based rule is simple, performant,
+ *   and avoids costly database lookups.
+ * - Flexible Writes on Shared Data: In this prototyping stage, any authenticated
+ *   user can create, update, or delete documents in the shared top-level collections
+ *   (products, customers, etc.). This facilitates rapid development and data seeding.
+ *   Production environments should refine this to a role-based system (e.g., admins).
+ * - Relational Integrity: For nested documents like receipt items, rules enforce
+ *   that the item's reference to its parent (e.g., `receiptId`) is correctly set
+ *   on creation and cannot be changed on update, ensuring data consistency.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ------------------------------------------------------------------------
+    // Helper Functions
+    // ------------------------------------------------------------------------
+
+    /**
+     * Returns true if the user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Returns true if the authenticated user's UID matches the provided userId.
+     * Used to enforce the user-ownership model.
+     */
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    /**
+     * Returns true if the document being written to already exists.
+     * CRITICAL: Must be used for all update and delete operations.
+     */
+    function isExistingDoc() {
+      return resource != null;
+    }
+
+    /**
+     * A convenient combination of isOwner and isExistingDoc for update/delete
+     * operations on user-owned documents.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && isExistingDoc();
+    }
+
+    // ------------------------------------------------------------------------
+    // Shared Business Data Collections
+    // ------------------------------------------------------------------------
+
+    /**
+     * @description Controls access to product data. In this prototype, any signed-in user can manage products.
+     * @path /products/{productId}
+     * @allow A signed-in user (create) a new product document.
+     * @deny An anonymous user tries to (list) products.
+     * @principle Allows collaborative management of shared data by trusted (authenticated) users during prototyping.
+     */
+    match /products/{productId} {
+      allow get, list, create: if isSignedIn();
+      allow update, delete: if isSignedIn() && isExistingDoc();
+    }
+
+    /**
+     * @description Controls access to product category data. Any signed-in user can manage categories.
+     * @path /categories/{categoryId}
+     * @allow A signed-in user (get) a specific category document.
+     * @deny An anonymous user tries to (create) a new category.
+     * @principle Allows collaborative management of shared data by trusted (authenticated) users during prototyping.
+     */
+    match /categories/{categoryId} {
+      allow get, list, create: if isSignedIn();
+      allow update, delete: if isSignedIn() && isExistingDoc();
+    }
+
+    /**
+     * @description Controls access to supplier data. Any signed-in user can manage suppliers.
+     * @path /suppliers/{supplierId}
+     * @allow A signed-in user (update) an existing supplier document.
+     * @deny A signed-in user tries to (update) a non-existent supplier.
+     * @principle Allows collaborative management of shared data by trusted (authenticated) users during prototyping.
+     */
+    match /suppliers/{supplierId} {
+      allow get, list, create: if isSignedIn();
+      allow update, delete: if isSignedIn() && isExistingDoc();
+    }
+
+    /**
+     * @description Controls access to warehouse data. Any signed-in user can manage warehouses.
+     * @path /warehouses/{warehouseId}
+     * @allow A signed-in user (delete) an existing warehouse document.
+     * @deny An anonymous user tries to (list) warehouses.
+     * @principle Allows collaborative management of shared data by trusted (authenticated) users during prototyping.
+     */
+    match /warehouses/{warehouseId} {
+      allow get, list, create: if isSignedIn();
+      allow update, delete: if isSignedIn() && isExistingDoc();
+    }
+
+    /**
+     * @description Controls access to customer data. Any signed-in user can manage customers.
+     * @path /customers/{customerId}
+     * @allow A signed-in user (create) a new customer document.
+     * @deny An anonymous user tries to (get) a customer document.
+     * @principle Allows collaborative management of shared data by trusted (authenticated) users during prototyping.
+     */
+    match /customers/{customerId} {
+      allow get, list, create: if isSignedIn();
+      allow update, delete: if isSignedIn() && isExistingDoc();
+    }
+
+    // ------------------------------------------------------------------------
+    // User-Specific Data
+    // ------------------------------------------------------------------------
+
+    match /users/{userId} {
+
+      /**
+       * @description Secures user-specific receipts. Only the owner can access their receipts.
+       * @path /users/{userId}/receipts/{receiptId}
+       * @allow User 'abc' with auth.uid 'abc' (create) a document at /users/abc/receipts/123.
+       * @deny User 'xyz' with auth.uid 'xyz' tries to (get) /users/abc/receipts/123.
+       * @principle Enforces strict user data privacy and ownership using path-based security.
+       */
+      match /receipts/{receiptId} {
+        allow get, list, create: if isOwner(userId);
+        allow update, delete: if isExistingOwner(userId);
+      }
+
+      /**
+       * @description Secures items within a user's receipt. Access is inherited from the parent receipt's owner.
+       * @path /users/{userId}/receipts/{receiptId}/receiptItems/{receiptItemId}
+       * @allow User 'abc' (create) an item at /users/abc/receipts/123/receiptItems/456 with `receiptId: '123'` in the data.
+       * @deny User 'abc' (create) an item at /users/abc/receipts/123/receiptItems/456 with `receiptId: '999'` in the data.
+       * @principle Enforces strict user ownership and validates relational integrity between parent and child documents.
+       */
+      match /receipts/{receiptId}/receiptItems/{receiptItemId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && request.resource.data.receiptId == receiptId;
+        allow update: if isExistingOwner(userId) && request.resource.data.receiptId == resource.data.receiptId;
+        allow delete: if isExistingOwner(userId);
+      }
+
+      /**
+       * @description Secures user-specific delivery orders. Only the owner can access their delivery orders.
+       * @path /users/{userId}/deliveryOrders/{deliveryOrderId}
+       * @allow User 'abc' with auth.uid 'abc' (list) documents at /users/abc/deliveryOrders.
+       * @deny User 'xyz' with auth.uid 'xyz' tries to (update) /users/abc/deliveryOrders/123.
+       * @principle Enforces strict user data privacy and ownership using path-based security.
+       */
+      match /deliveryOrders/{deliveryOrderId} {
+        allow get, list, create: if isOwner(userId);
+        allow update, delete: if isExistingOwner(userId);
+      }
+
+      /**
+       * @description Secures items within a user's delivery order. Access is inherited from the parent's owner.
+       * @path /users/{userId}/deliveryOrders/{deliveryOrderId}/deliveryOrderItems/{deliveryOrderItemId}
+       * @allow User 'abc' (update) an item at /users/abc/deliveryOrders/123/deliveryOrderItems/456.
+       * @deny User 'abc' tries to (update) the `deliveryOrderId` field on an existing item.
+       * @principle Enforces strict user ownership and validates relational integrity between parent and child documents.
+       */
+      match /deliveryOrders/{deliveryOrderId}/deliveryOrderItems/{deliveryOrderItemId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && request.resource.data.deliveryOrderId == deliveryOrderId;
+        allow update: if isExistingOwner(userId) && request.resource.data.deliveryOrderId == resource.data.deliveryOrderId;
+        allow delete: if isExistingOwner(userId);
+      }
+
+      /**
+       * @description Secures user-specific internal transfers. Only the owner can access their transfers.
+       * @path /users/{userId}/internalTransfers/{internalTransferId}
+       * @allow User 'abc' with auth.uid 'abc' (delete) a document at /users/abc/internalTransfers/123.
+       * @deny User 'xyz' with auth.uid 'xyz' tries to (get) /users/abc/internalTransfers/123.
+       * @principle Enforces strict user data privacy and ownership using path-based security.
+       */
+      match /internalTransfers/{internalTransferId} {
+        allow get, list, create: if isOwner(userId);
+        allow update, delete: if isExistingOwner(userId);
+      }
+
+      /**
+       * @description Secures user-specific stock adjustments. Only the owner can access their adjustments.
+       * @path /users/{userId}/stockAdjustments/{stockAdjustmentId}
+       * @allow User 'abc' with auth.uid 'abc' (create) a document at /users/abc/stockAdjustments/123.
+       * @deny User 'abc' tries to (update) a non-existent document at /users/abc/stockAdjustments/999.
+       * @principle Enforces strict user data privacy and ownership using path-based security.
+       */
+      match /stockAdjustments/{stockAdjustmentId} {
+        allow get, list, create: if isOwner(userId);
+        allow update, delete: if isExistingOwner(userId);
+      }
+    }
+  }
+}

@@ -1,0 +1,563 @@
+{
+  "entities": {
+    "Product": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Product",
+      "type": "object",
+      "description": "Represents a product in the inventory.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Product entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the product."
+        },
+        "sku": {
+          "type": "string",
+          "description": "Stock Keeping Unit (SKU) or code of the product."
+        },
+        "categoryId": {
+          "type": "string",
+          "description": "Reference to Category. (Relationship: Category 1:N Product)"
+        },
+        "unitOfMeasure": {
+          "type": "string",
+          "description": "Unit of measure for the product (e.g., kg, piece)."
+        },
+        "reorderingRules": {
+          "type": "string",
+          "description": "Reordering rules for the product."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "sku",
+        "categoryId",
+        "unitOfMeasure"
+      ]
+    },
+    "Category": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Category",
+      "type": "object",
+      "description": "Represents a category of products.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Category entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the product category."
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ]
+    },
+    "Receipt": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Receipt",
+      "type": "object",
+      "description": "Represents a receipt of incoming stock.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Receipt entity."
+        },
+        "supplierId": {
+          "type": "string",
+          "description": "Reference to Supplier. (Relationship: Supplier 1:N Receipt)"
+        },
+        "receiptDate": {
+          "type": "string",
+          "description": "Date of the receipt.",
+          "format": "date-time"
+        },
+        "status": {
+          "type": "string",
+          "description": "Status of the receipt (e.g., Draft, Waiting, Ready, Done, Canceled)."
+        }
+      },
+      "required": [
+        "id",
+        "supplierId",
+        "receiptDate",
+        "status"
+      ]
+    },
+    "ReceiptItem": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ReceiptItem",
+      "type": "object",
+      "description": "Represents an item in a receipt.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the ReceiptItem entity."
+        },
+        "receiptId": {
+          "type": "string",
+          "description": "Reference to Receipt. (Relationship: Receipt 1:N ReceiptItem)"
+        },
+        "productId": {
+          "type": "string",
+          "description": "Reference to Product. (Relationship: Product 1:N ReceiptItem)"
+        },
+        "quantityReceived": {
+          "type": "number",
+          "description": "Quantity of the product received."
+        }
+      },
+      "required": [
+        "id",
+        "receiptId",
+        "productId",
+        "quantityReceived"
+      ]
+    },
+    "DeliveryOrder": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "DeliveryOrder",
+      "type": "object",
+      "description": "Represents a delivery order for outgoing stock.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the DeliveryOrder entity."
+        },
+        "customerId": {
+          "type": "string",
+          "description": "Reference to Customer. (Relationship: Customer 1:N DeliveryOrder)"
+        },
+        "deliveryDate": {
+          "type": "string",
+          "description": "Date of the delivery order.",
+          "format": "date-time"
+        },
+        "status": {
+          "type": "string",
+          "description": "Status of the delivery order (e.g., Draft, Waiting, Ready, Done, Canceled)."
+        }
+      },
+      "required": [
+        "id",
+        "customerId",
+        "deliveryDate",
+        "status"
+      ]
+    },
+    "DeliveryOrderItem": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "DeliveryOrderItem",
+      "type": "object",
+      "description": "Represents an item in a delivery order.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the DeliveryOrderItem entity."
+        },
+        "deliveryOrderId": {
+          "type": "string",
+          "description": "Reference to DeliveryOrder. (Relationship: DeliveryOrder 1:N DeliveryOrderItem)"
+        },
+        "productId": {
+          "type": "string",
+          "description": "Reference to Product. (Relationship: Product 1:N DeliveryOrderItem)"
+        },
+        "quantityOrdered": {
+          "type": "number",
+          "description": "Quantity of the product ordered."
+        }
+      },
+      "required": [
+        "id",
+        "deliveryOrderId",
+        "productId",
+        "quantityOrdered"
+      ]
+    },
+    "InternalTransfer": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "InternalTransfer",
+      "type": "object",
+      "description": "Represents an internal transfer of stock between locations.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the InternalTransfer entity."
+        },
+        "fromWarehouseId": {
+          "type": "string",
+          "description": "Reference to Warehouse. (Relationship: Warehouse 1:N InternalTransfer as origin)"
+        },
+        "toWarehouseId": {
+          "type": "string",
+          "description": "Reference to Warehouse. (Relationship: Warehouse 1:N InternalTransfer as destination)"
+        },
+        "transferDate": {
+          "type": "string",
+          "description": "Date of the internal transfer.",
+          "format": "date-time"
+        },
+        "productId": {
+          "type": "string",
+          "description": "Reference to Product. (Relationship: Product 1:N InternalTransfer)"
+        },
+        "quantity": {
+          "type": "number",
+          "description": "Quantity of product being transferred."
+        }
+      },
+      "required": [
+        "id",
+        "fromWarehouseId",
+        "toWarehouseId",
+        "transferDate",
+        "productId",
+        "quantity"
+      ]
+    },
+    "StockAdjustment": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "StockAdjustment",
+      "type": "object",
+      "description": "Represents an adjustment to the stock level of a product at a specific location.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the StockAdjustment entity."
+        },
+        "warehouseId": {
+          "type": "string",
+          "description": "Reference to Warehouse. (Relationship: Warehouse 1:N StockAdjustment)"
+        },
+        "productId": {
+          "type": "string",
+          "description": "Reference to Product. (Relationship: Product 1:N StockAdjustment)"
+        },
+        "countedQuantity": {
+          "type": "number",
+          "description": "The quantity counted during the physical count."
+        },
+        "adjustmentDate": {
+          "type": "string",
+          "description": "Date of the stock adjustment.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "warehouseId",
+        "productId",
+        "countedQuantity",
+        "adjustmentDate"
+      ]
+    },
+    "Warehouse": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Warehouse",
+      "type": "object",
+      "description": "Represents a warehouse or location where stock is stored.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Warehouse entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the warehouse or location."
+        },
+        "location": {
+          "type": "string",
+          "description": "The location of the warehouse."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "location"
+      ]
+    },
+    "Supplier": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Supplier",
+      "type": "object",
+      "description": "Represents a supplier of products.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Supplier entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the supplier."
+        },
+        "contactEmail": {
+          "type": "string",
+          "description": "Email address of the supplier.",
+          "format": "email"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "contactEmail"
+      ]
+    },
+    "Customer": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Customer",
+      "type": "object",
+      "description": "Represents a customer who orders products.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Customer entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the customer."
+        },
+        "shippingAddress": {
+          "type": "string",
+          "description": "Shipping address of the customer."
+        },
+        "contactEmail": {
+          "type": "string",
+          "description": "Email address of the customer.",
+          "format": "email"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "shippingAddress",
+        "contactEmail"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/products/{productId}",
+        "definition": {
+          "entityName": "Product",
+          "schema": {
+            "$ref": "#/backend/entities/Product"
+          },
+          "description": "Stores product information. Accessible to authorized inventory managers. The `productId` uniquely identifies each product.",
+          "params": [
+            {
+              "name": "productId",
+              "description": "The unique identifier for the product."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/categories/{categoryId}",
+        "definition": {
+          "entityName": "Category",
+          "schema": {
+            "$ref": "#/backend/entities/Category"
+          },
+          "description": "Stores product category information. Accessible to authorized inventory managers. The `categoryId` uniquely identifies each product category.",
+          "params": [
+            {
+              "name": "categoryId",
+              "description": "The unique identifier for the product category."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/suppliers/{supplierId}",
+        "definition": {
+          "entityName": "Supplier",
+          "schema": {
+            "$ref": "#/backend/entities/Supplier"
+          },
+          "description": "Stores supplier information. Accessible to authorized inventory managers. The `supplierId` uniquely identifies each supplier.",
+          "params": [
+            {
+              "name": "supplierId",
+              "description": "The unique identifier for the supplier."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/warehouses/{warehouseId}",
+        "definition": {
+          "entityName": "Warehouse",
+          "schema": {
+            "$ref": "#/backend/entities/Warehouse"
+          },
+          "description": "Stores warehouse information. Accessible to authorized inventory managers. The `warehouseId` uniquely identifies each warehouse.",
+          "params": [
+            {
+              "name": "warehouseId",
+              "description": "The unique identifier for the warehouse."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/customers/{customerId}",
+        "definition": {
+          "entityName": "Customer",
+          "schema": {
+            "$ref": "#/backend/entities/Customer"
+          },
+          "description": "Stores customer information.  Accessible to authorized personnel.  The `customerId` uniquely identifies each customer.",
+          "params": [
+            {
+              "name": "customerId",
+              "description": "The unique identifier for the customer."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/receipts/{receiptId}",
+        "definition": {
+          "entityName": "Receipt",
+          "schema": {
+            "$ref": "#/backend/entities/Receipt"
+          },
+          "description": "Stores receipt information, nested under the user who created it for ownership and access control.  Accessible only to the user who created it. The `userId` identifies the owner and the `receiptId` is the identifier of the receipt.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user who created the receipt."
+            },
+            {
+              "name": "receiptId",
+              "description": "The unique identifier for the receipt."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/receipts/{receiptId}/receiptItems/{receiptItemId}",
+        "definition": {
+          "entityName": "ReceiptItem",
+          "schema": {
+            "$ref": "#/backend/entities/ReceiptItem"
+          },
+          "description": "Stores receipt item information, nested under the receipt for data locality. Accessible only to the user who created the parent receipt. The `userId` identifies the owner, the `receiptId` identifies the parent receipt and `receiptItemId` is the identifier of the receipt item.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user who created the receipt."
+            },
+            {
+              "name": "receiptId",
+              "description": "The unique identifier for the receipt."
+            },
+            {
+              "name": "receiptItemId",
+              "description": "The unique identifier for the receipt item."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/deliveryOrders/{deliveryOrderId}",
+        "definition": {
+          "entityName": "DeliveryOrder",
+          "schema": {
+            "$ref": "#/backend/entities/DeliveryOrder"
+          },
+          "description": "Stores delivery order information, nested under the user who created it for ownership and access control. Accessible only to the user who created it. The `userId` identifies the owner and the `deliveryOrderId` is the identifier of the delivery order.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user who created the delivery order."
+            },
+            {
+              "name": "deliveryOrderId",
+              "description": "The unique identifier for the delivery order."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/deliveryOrders/{deliveryOrderId}/deliveryOrderItems/{deliveryOrderItemId}",
+        "definition": {
+          "entityName": "DeliveryOrderItem",
+          "schema": {
+            "$ref": "#/backend/entities/DeliveryOrderItem"
+          },
+          "description": "Stores delivery order item information, nested under the delivery order for data locality.  Accessible only to the user who created the parent delivery order. The `userId` identifies the owner, `deliveryOrderId` identifies the parent delivery order, and `deliveryOrderItemId` is the identifier of the delivery order item.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user who created the delivery order."
+            },
+            {
+              "name": "deliveryOrderId",
+              "description": "The unique identifier for the delivery order."
+            },
+            {
+              "name": "deliveryOrderItemId",
+              "description": "The unique identifier for the delivery order item."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/internalTransfers/{internalTransferId}",
+        "definition": {
+          "entityName": "InternalTransfer",
+          "schema": {
+            "$ref": "#/backend/entities/InternalTransfer"
+          },
+          "description": "Stores internal transfer information, nested under the user who created it for ownership and access control.  Accessible only to the user who created it. The `userId` identifies the owner and `internalTransferId` is the identifier of the internal transfer.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user who created the internal transfer."
+            },
+            {
+              "name": "internalTransferId",
+              "description": "The unique identifier for the internal transfer."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/stockAdjustments/{stockAdjustmentId}",
+        "definition": {
+          "entityName": "StockAdjustment",
+          "schema": {
+            "$ref": "#/backend/entities/StockAdjustment"
+          },
+          "description": "Stores stock adjustment information, nested under the user who created it for ownership and access control.  Accessible only to the user who created it. `userId` identifies the owner, and `stockAdjustmentId` is the identifier of the stock adjustment.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user who created the stock adjustment."
+            },
+            {
+              "name": "stockAdjustmentId",
+              "description": "The unique identifier for the stock adjustment."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore data structure is designed to support the GreenGrocer IMS application, focusing on inventory management for a grocery warehouse. It prioritizes security, scalability, and ease of debugging.  \n\n**Authorization Independence:**  Each document that requires access control (e.g., receipts, delivery orders, stock adjustments) could benefit from having an explicit authorization model built-in (e.g. a `members` map for team access or an `ownerId` field for private data).  However, given the single user context from the problem description, a simplified approach focused on path-based access control under the `users/{userId}` path is suitable.  This approach inherently ensures atomic operations because each user's data is independent of other users' data, avoiding `get()` calls.  \n\n**Structural Segregation:**  Entities are separated into distinct collections based on their type (products, categories, receipts, etc.) to ensure a homogeneous security posture within each collection.  For example, all documents within the `/users/{userId}/receipts` collection share the same access control requirements, simplifying the security rules.  \n\n**Access Modeling:**  \n*   **Path-Based Ownership:**  Data is structured under the `/users/{userId}` path, establishing clear ownership for each user's inventory data.  Receipts, delivery orders, internal transfers, and stock adjustments are all nested under the user's document.  This enforces strong ownership and simplifies security rules.\n\n**QAPs Support:**  The structure supports secure `list` operations by segregating data based on ownership and type.  For example, listing receipts for a specific user is done via a simple collection group query on `/users/{userId}/receipts`, which is secured by rules based on the `userId`.\n\nBy adhering to these principles, the Firestore structure enables a secure, scalable, and maintainable inventory management system."
+  }
+}
