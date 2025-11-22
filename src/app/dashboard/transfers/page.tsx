@@ -1,14 +1,35 @@
+'use client';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { recentActivities } from "@/lib/data";
 import { MoreHorizontal, PlusCircle } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
+import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, useUser } from "@/firebase";
+import { collection, serverTimestamp } from "firebase/firestore";
+import type { InternalTransfer, Product, Warehouse } from "@/lib/types";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import React, { useState } from "react";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 
 export default function TransfersPage() {
-    const transfers = recentActivities.filter(a => a.type === 'Transfer');
+    const firestore = useFirestore();
+    const { user } = useUser();
+
+    const transfersCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'internalTransfers') : null, [firestore, user]);
+    const { data: transfers, isLoading } = useCollection<InternalTransfer>(transfersCollection);
+
+    const warehousesCollection = useMemoFirebase(() => collection(firestore, 'warehouses'), [firestore]);
+    const { data: warehouses } = useCollection<Warehouse>(warehousesCollection);
+
+    const productsCollection = useMemoFirebase(() => collection(firestore, 'products'), [firestore]);
+    const { data: products } = useCollection<Product>(productsCollection);
+
+    const [isSheetOpen, setIsSheetOpen] = useState(false);
+
     const getStatusVariant = (status: string) => {
         switch (status) {
           case "Done": return "default";
@@ -19,14 +40,74 @@ export default function TransfersPage() {
           default: return "default";
         }
     };
+
+    const handleAddTransfer = (event: React.FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      if (!transfersCollection) return;
+      const formData = new FormData(event.currentTarget);
+      const newTransfer = {
+        fromWarehouseId: formData.get('fromWarehouseId') as string,
+        toWarehouseId: formData.get('toWarehouseId') as string,
+        productId: formData.get('productId') as string,
+        quantity: Number(formData.get('quantity')),
+        transferDate: serverTimestamp(),
+        status: 'Draft',
+      };
+      addDocumentNonBlocking(transfersCollection, newTransfer);
+      setIsSheetOpen(false);
+    };
+
+    const getWarehouseName = (id: string) => warehouses?.find(w => w.id === id)?.name || 'N/A';
+    const getProductName = (id: string) => products?.find(p => p.id === id)?.name || 'N/A';
     
   return (
     <div className="flex flex-col gap-6">
       <PageHeader title="Internal Transfers">
-        <Button size="sm" className="flex items-center gap-2">
-          <PlusCircle className="h-4 w-4" />
-          <span>New Transfer</span>
-        </Button>
+        <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+          <SheetTrigger asChild>
+            <Button size="sm" className="flex items-center gap-2">
+              <PlusCircle className="h-4 w-4" />
+              <span>New Transfer</span>
+            </Button>
+          </SheetTrigger>
+          <SheetContent>
+            <SheetHeader>
+              <SheetTitle>Create New Internal Transfer</SheetTitle>
+              <SheetDescription>Move stock between your warehouse locations.</SheetDescription>
+            </SheetHeader>
+            <form onSubmit={handleAddTransfer} className="grid gap-4 py-4">
+              <div className="space-y-2">
+                <Label>Source Warehouse</Label>
+                <Select name="fromWarehouseId">
+                  <SelectTrigger><SelectValue placeholder="Select source..." /></SelectTrigger>
+                  <SelectContent>{warehouses?.map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Destination Warehouse</Label>
+                <Select name="toWarehouseId">
+                  <SelectTrigger><SelectValue placeholder="Select destination..." /></SelectTrigger>
+                  <SelectContent>{warehouses?.map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+               <div className="space-y-2">
+                <Label>Product</Label>
+                <Select name="productId">
+                  <SelectTrigger><SelectValue placeholder="Select a product..." /></SelectTrigger>
+                  <SelectContent>{products?.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+               <div className="space-y-2">
+                  <Label htmlFor="quantity">Quantity</Label>
+                  <Input id="quantity" name="quantity" type="number" placeholder="0" required />
+               </div>
+              <div className="flex justify-end gap-2 mt-4">
+                  <Button variant="outline" type="button" onClick={() => setIsSheetOpen(false)}>Cancel</Button>
+                  <Button type="submit">Create Transfer</Button>
+              </div>
+            </form>
+          </SheetContent>
+        </Sheet>
       </PageHeader>
       
       <Card>
@@ -39,17 +120,27 @@ export default function TransfersPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Reference</TableHead>
+                <TableHead>Product</TableHead>
+                <TableHead>From</TableHead>
+                <TableHead>To</TableHead>
+                <TableHead>Quantity</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Date</TableHead>
                 <TableHead><span className="sr-only">Actions</span></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {transfers.map((transfer) => (
+              {isLoading && <TableRow><TableCell colSpan={8} className="text-center">Loading...</TableCell></TableRow>}
+              {!isLoading && transfers?.length === 0 && <TableRow><TableCell colSpan={8} className="text-center">No transfers found.</TableCell></TableRow>}
+              {transfers?.map((transfer) => (
                 <TableRow key={transfer.id}>
-                  <TableCell className="font-medium">{transfer.reference}</TableCell>
+                  <TableCell className="font-medium">TR-{transfer.id.substring(0,6).toUpperCase()}</TableCell>
+                  <TableCell>{getProductName(transfer.productId)}</TableCell>
+                  <TableCell>{getWarehouseName(transfer.fromWarehouseId)}</TableCell>
+                  <TableCell>{getWarehouseName(transfer.toWarehouseId)}</TableCell>
+                  <TableCell>{transfer.quantity}</TableCell>
                   <TableCell><Badge variant={getStatusVariant(transfer.status)}>{transfer.status}</Badge></TableCell>
-                  <TableCell>{transfer.date}</TableCell>
+                  <TableCell>{transfer.transferDate?.toDate().toLocaleDateString()}</TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>

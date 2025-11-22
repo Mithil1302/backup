@@ -68,3 +68,13 @@ export type StockAdjustment = {
     countedQuantity: number;
     adjustmentDate: Timestamp;
 }
+
+export type InternalTransfer = {
+    id: string;
+    fromWarehouseId: string;
+    toWarehouseId: string;
+    productId: string;
+    quantity: number;
+    transferDate: Timestamp;
+    status: "Done" | "Waiting" | "Ready" | "Draft" | "Canceled";
+}
