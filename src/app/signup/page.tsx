@@ -1,3 +1,5 @@
+'use client';
+
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,8 +12,26 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/logo";
+import { useAuth, initiateEmailSignUp } from "@/firebase";
+import { useRouter } from "next/navigation";
+import React from "react";
 
 export default function SignupPage() {
+  const auth = useAuth();
+  const router = useRouter();
+
+  const handleSignUp = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
+    
+    if(email && password) {
+      initiateEmailSignUp(auth, email, password);
+      router.push('/dashboard');
+    }
+  };
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <Card className="mx-auto max-w-sm">
@@ -25,17 +45,18 @@ export default function SignupPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form action="/dashboard" className="grid gap-4">
+          <form onSubmit={handleSignUp} className="grid gap-4">
             <div className="grid gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="first-name">Name</Label>
-                <Input id="first-name" placeholder="Max" required />
+                <Input id="first-name" name="name" placeholder="Max" required />
               </div>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
+                name="email"
                 type="email"
                 placeholder="m@example.com"
                 required
@@ -43,7 +64,7 @@ export default function SignupPage() {
             </div>
             <div className="grid gap-2">
               <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" />
+              <Input id="password" name="password" type="password" />
             </div>
             <Button type="submit" className="w-full">
               Create an account

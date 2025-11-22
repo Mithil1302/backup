@@ -22,7 +22,7 @@ export type Product = {
   sku: string;
   category: string;
   stock: number;
-  uom: string; // Unit of Measure
+  unitOfMeasure: string;
 };
 
 export type Warehouse = {

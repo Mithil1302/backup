@@ -1,3 +1,5 @@
+'use client';
+
 import Link from "next/link";
 import {
   ArrowRightLeft,
@@ -40,12 +42,39 @@ import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/logo";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Separator } from "@/components/ui/separator";
+import { useAuth, useUser } from "@/firebase";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { signOut } from "firebase/auth";
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const { user, isUserLoading } = useUser();
+  const auth = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isUserLoading && !user) {
+      router.push('/');
+    }
+  }, [user, isUserLoading, router]);
+
+  const handleLogout = () => {
+    signOut(auth);
+    router.push('/');
+  };
+
+  if (isUserLoading || !user) {
+    return (
+        <div className="flex min-h-screen items-center justify-center">
+            <p>Loading...</p>
+        </div>
+    );
+  }
+
   return (
     <SidebarProvider>
       <Sidebar>
@@ -136,12 +165,12 @@ export default function DashboardLayout({
                 <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="w-full justify-start gap-2 px-2">
                         <Avatar className="h-8 w-8">
-                            <AvatarImage src="https://picsum.photos/seed/user/40/40" alt="User" />
-                            <AvatarFallback>JD</AvatarFallback>
+                            <AvatarImage src={user.photoURL || `https://picsum.photos/seed/user/40/40`} alt="User" />
+                            <AvatarFallback>{user.email?.charAt(0).toUpperCase()}</AvatarFallback>
                         </Avatar>
                         <div className="text-left">
-                            <p className="font-medium text-sm">John Doe</p>
-                            <p className="text-xs text-muted-foreground">john.doe@example.com</p>
+                            <p className="font-medium text-sm">{user.displayName || 'User'}</p>
+                            <p className="text-xs text-muted-foreground">{user.email}</p>
                         </div>
                     </Button>
                 </DropdownMenuTrigger>
@@ -155,8 +184,8 @@ export default function DashboardLayout({
                          <Link href="/dashboard/settings"><Settings className="mr-2 h-4 w-4" />Settings</Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild>
-                        <Link href="/"><LogOut className="mr-2 h-4 w-4" />Log out</Link>
+                    <DropdownMenuItem onClick={handleLogout}>
+                        <LogOut className="mr-2 h-4 w-4" />Log out
                     </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
