@@ -43,12 +43,13 @@ import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/logo";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Separator } from "@/components/ui/separator";
-import { useAuth, useUser, useFirestore, useCollection } from "@/firebase";
+import { useAuth, useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { signOut } from "firebase/auth";
 import { seedDatabase } from "@/lib/seed";
 import { collection } from "firebase/firestore";
+import type { Product } from "@/lib/types";
 
 export default function DashboardLayout({
   children,
@@ -63,20 +64,21 @@ export default function DashboardLayout({
   const [hasSeeded, setHasSeeded] = useState(false);
 
   // Check if data exists to prevent re-seeding
-  const productsCollection = useCollection(collection(firestore, 'products'));
+  const productsQuery = useMemoFirebase(() => collection(firestore, 'products'), [firestore]);
+  const { data: products, isLoading: productsIsLoading } = useCollection<Product>(productsQuery);
 
   useEffect(() => {
-    if (!productsCollection.isLoading && productsCollection.data?.length === 0 && !hasSeeded) {
+    if (!productsIsLoading && products?.length === 0 && !hasSeeded) {
       console.log('No products found, seeding database...');
       seedDatabase(firestore).then(() => {
         setHasSeeded(true);
         console.log('Database seeded successfully.');
       });
-    } else if (productsCollection.data && productsCollection.data.length > 0) {
+    } else if (products && products.length > 0) {
       // If data already exists, mark as seeded to prevent future attempts
       if (!hasSeeded) setHasSeeded(true);
     }
-  }, [productsCollection.isLoading, productsCollection.data, firestore, hasSeeded]);
+  }, [productsIsLoading, products, firestore, hasSeeded]);
 
   useEffect(() => {
     if (!isUserLoading && !user) {
