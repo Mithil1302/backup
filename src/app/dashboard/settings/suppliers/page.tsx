@@ -7,70 +7,63 @@ import { MoreHorizontal, PlusCircle } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase";
 import { collection, doc } from "firebase/firestore";
-import type { Warehouse } from "@/lib/types";
+import type { Supplier } from "@/lib/types";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import React from "react";
 
-export default function WarehousesPage() {
+export default function SuppliersPage() {
   const firestore = useFirestore();
-  const warehousesCollection = useMemoFirebase(() => collection(firestore, 'warehouses'), [firestore]);
-  const { data: warehouses, isLoading } = useCollection<Warehouse>(warehousesCollection);
+  const suppliersCollection = useMemoFirebase(() => collection(firestore, 'suppliers'), [firestore]);
+  const { data: suppliers, isLoading } = useCollection<Supplier>(suppliersCollection);
 
-  const handleAddWarehouse = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleAddSupplier = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
-    const newWarehouse = {
+    const newSupplier = {
       name: formData.get('name') as string,
-      location: formData.get('location') as string,
-      capacity: Number(formData.get('capacity') || 0),
+      contactEmail: formData.get('email') as string,
     };
-    addDocumentNonBlocking(warehousesCollection, newWarehouse);
+    addDocumentNonBlocking(suppliersCollection, newSupplier);
     (event.target as HTMLFormElement).reset();
   };
-  
+
   const handleDelete = (id: string) => {
     if (!firestore) return;
-    const docRef = doc(firestore, 'warehouses', id);
+    const docRef = doc(firestore, 'suppliers', id);
     deleteDocumentNonBlocking(docRef);
   }
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title="Warehouses">
+      <PageHeader title="Suppliers">
         <Sheet>
           <SheetTrigger asChild>
             <Button size="sm" className="flex items-center gap-2">
               <PlusCircle className="h-4 w-4" />
-              <span>Add Warehouse</span>
+              <span>Add Supplier</span>
             </Button>
           </SheetTrigger>
           <SheetContent>
             <SheetHeader>
-              <SheetTitle>Add a new warehouse</SheetTitle>
+              <SheetTitle>Add a new supplier</SheetTitle>
               <SheetDescription>
-                Fill in the details below to create a new warehouse.
+                Fill in the details below to create a new supplier.
               </SheetDescription>
             </SheetHeader>
-            <form onSubmit={handleAddWarehouse} className="grid gap-4 py-4">
+            <form onSubmit={handleAddSupplier} className="grid gap-4 py-4">
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="name" className="text-right">Name</Label>
-                <Input name="name" id="name" placeholder="Main Warehouse" className="col-span-3" required />
+                <Input name="name" id="name" placeholder="Global Fresh Produce" className="col-span-3" required />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="location" className="text-right">Location</Label>
-                <Input name="location" id="location" placeholder="123 Industrial Rd" className="col-span-3" required />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="capacity" className="text-right">Capacity</Label>
-                <Input name="capacity" id="capacity" type="number" placeholder="10000" className="col-span-3" />
+                <Label htmlFor="email" className="text-right">Contact Email</Label>
+                <Input name="email" id="email" type="email" placeholder="contact@globalfresh.com" className="col-span-3" required />
               </div>
               <div className="flex justify-end gap-2 mt-4">
-                 <SheetTrigger asChild>
-                   <Button variant="outline">Cancel</Button>
-                 </SheetTrigger>
-                <Button type="submit">Create Warehouse</Button>
+                <SheetTrigger asChild><Button variant="outline">Cancel</Button></SheetTrigger>
+                <Button type="submit">Create Supplier</Button>
               </div>
             </form>
           </SheetContent>
@@ -79,26 +72,24 @@ export default function WarehousesPage() {
       
       <Card>
         <CardHeader>
-          <CardTitle>Warehouse Locations</CardTitle>
-          <CardDescription>Manage your physical stock locations.</CardDescription>
+          <CardTitle>Supplier List</CardTitle>
+          <CardDescription>Manage your product suppliers.</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
-                <TableHead>Location</TableHead>
-                <TableHead>Capacity</TableHead>
+                <TableHead>Contact Email</TableHead>
                 <TableHead><span className="sr-only">Actions</span></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading && <TableRow><TableCell colSpan={4}>Loading...</TableCell></TableRow>}
-              {warehouses && warehouses.map((warehouse) => (
-                <TableRow key={warehouse.id}>
-                  <TableCell className="font-medium">{warehouse.name}</TableCell>
-                  <TableCell>{warehouse.location}</TableCell>
-                  <TableCell>{warehouse.capacity?.toLocaleString()}</TableCell>
+              {isLoading && <TableRow><TableCell colSpan={3}>Loading...</TableCell></TableRow>}
+              {suppliers && suppliers.map((supplier) => (
+                <TableRow key={supplier.id}>
+                  <TableCell className="font-medium">{supplier.name}</TableCell>
+                  <TableCell>{supplier.contactEmail}</TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -109,8 +100,7 @@ export default function WarehousesPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem>Edit</DropdownMenuItem>
-                        <DropdownMenuItem>View Stock</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleDelete(warehouse.id)} className="text-destructive">Delete</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleDelete(supplier.id)} className="text-destructive">Delete</DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>

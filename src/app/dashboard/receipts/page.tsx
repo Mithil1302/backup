@@ -1,14 +1,30 @@
+'use client';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { recentActivities } from "@/lib/data";
 import { MoreHorizontal, PlusCircle } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
+import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, useUser } from "@/firebase";
+import { collection, serverTimestamp } from "firebase/firestore";
+import type { Receipt } from "@/lib/types";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import React from "react";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import type { Supplier } from "@/lib/types";
 
 export default function ReceiptsPage() {
-    const receipts = recentActivities.filter(a => a.type === 'Receipt');
+    const firestore = useFirestore();
+    const { user } = useUser();
+
+    const receiptsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'receipts') : null, [firestore, user]);
+    const { data: receipts, isLoading } = useCollection<Receipt>(receiptsCollection);
+
+    const suppliersCollection = useMemoFirebase(() => collection(firestore, 'suppliers'), [firestore]);
+    const { data: suppliers } = useCollection<Supplier>(suppliersCollection);
+
     const getStatusVariant = (status: string) => {
         switch (status) {
           case "Done": return "default";
@@ -20,13 +36,53 @@ export default function ReceiptsPage() {
         }
     };
     
+    const handleAddReceipt = (event: React.FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      if (!receiptsCollection) return;
+      const formData = new FormData(event.currentTarget);
+      const newReceipt = {
+        supplierId: formData.get('supplierId') as string,
+        receiptDate: serverTimestamp(),
+        status: 'Draft',
+      };
+      addDocumentNonBlocking(receiptsCollection, newReceipt);
+      (event.target as HTMLFormElement).reset();
+    };
+
   return (
     <div className="flex flex-col gap-6">
       <PageHeader title="Receipts">
-        <Button size="sm" className="flex items-center gap-2">
-          <PlusCircle className="h-4 w-4" />
-          <span>New Receipt</span>
-        </Button>
+        <Sheet>
+            <SheetTrigger asChild>
+                <Button size="sm" className="flex items-center gap-2">
+                  <PlusCircle className="h-4 w-4" />
+                  <span>New Receipt</span>
+                </Button>
+            </SheetTrigger>
+            <SheetContent>
+                <SheetHeader>
+                    <SheetTitle>Create a new receipt</SheetTitle>
+                    <SheetDescription>Select a supplier to start a new stock receipt.</SheetDescription>
+                </SheetHeader>
+                <form onSubmit={handleAddReceipt} className="grid gap-4 py-4">
+                    <div className="space-y-2">
+                        <Label>Supplier</Label>
+                        <Select name="supplierId">
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select a supplier" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {suppliers?.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="flex justify-end gap-2 mt-4">
+                        <SheetTrigger asChild><Button variant="outline">Cancel</Button></SheetTrigger>
+                        <Button type="submit">Create Receipt</Button>
+                    </div>
+                </form>
+            </SheetContent>
+        </Sheet>
       </PageHeader>
       
       <Card>
@@ -45,11 +101,12 @@ export default function ReceiptsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {receipts.map((receipt) => (
+              {isLoading && <TableRow><TableCell colSpan={4}>Loading...</TableCell></TableRow>}
+              {receipts && receipts.map((receipt) => (
                 <TableRow key={receipt.id}>
-                  <TableCell className="font-medium">{receipt.reference}</TableCell>
+                  <TableCell className="font-medium">RCPT-{receipt.id.substring(0, 6).toUpperCase()}</TableCell>
                   <TableCell><Badge variant={getStatusVariant(receipt.status)}>{receipt.status}</Badge></TableCell>
-                  <TableCell>{receipt.date}</TableCell>
+                  <TableCell>{receipt.receiptDate?.toDate().toLocaleDateString()}</TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>

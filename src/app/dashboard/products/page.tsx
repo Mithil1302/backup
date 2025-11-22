@@ -11,29 +11,35 @@ import { Label } from "@/components/ui/label";
 import { MoreHorizontal, PlusCircle } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { cn } from "@/lib/utils";
-import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking } from "@/firebase";
-import { collection } from "firebase/firestore";
+import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase";
+import { collection, doc } from "firebase/firestore";
 import type { Product } from "@/lib/types";
 import React from "react";
 
 export default function ProductsPage() {
   const firestore = useFirestore();
-  const productsCollection = useMemoFirebase(() => collection(firestore, 'products'), [firestore]);
+  const productsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'products') : null, [firestore]);
   const { data: products, isLoading } = useCollection<Product>(productsCollection);
 
   const handleAddProduct = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!productsCollection) return;
     const formData = new FormData(event.currentTarget);
     const newProduct = {
       name: formData.get('name') as string,
       sku: formData.get('sku') as string,
-      category: formData.get('category') as string,
+      categoryId: formData.get('category') as string, // Changed from category
       unitOfMeasure: formData.get('uom') as string,
       stock: Number(formData.get('stock') || 0),
     };
     addDocumentNonBlocking(productsCollection, newProduct);
-    // Maybe close sheet after submit, for now we leave it open
-    // (event.target as HTMLFormElement).reset();
+    (event.target as HTMLFormElement).reset();
+  };
+
+  const handleDeleteProduct = (productId: string) => {
+    if (!firestore) return;
+    const productDoc = doc(firestore, 'products', productId);
+    deleteDocumentNonBlocking(productDoc);
   };
 
   return (
@@ -63,8 +69,8 @@ export default function ProductsPage() {
                 <Input name="sku" id="sku" placeholder="FR-BAN-001" className="col-span-3" required />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="category" className="text-right">Category</Label>
-                <Input name="category" id="category" placeholder="Fruits" className="col-span-3" required/>
+                <Label htmlFor="category" className="text-right">Category ID</Label>
+                <Input name="category" id="category" placeholder="FRUITS" className="col-span-3" required/>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="uom" className="text-right">Unit of Measure</Label>
@@ -102,12 +108,12 @@ export default function ProductsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading && <TableRow><TableCell colSpan={5}>Loading...</TableCell></TableRow>}
+              {isLoading && <TableRow><TableCell colSpan={5} className="text-center">Loading...</TableCell></TableRow>}
               {products && products.map((product) => (
                 <TableRow key={product.id}>
                   <TableCell className="font-medium">{product.name}</TableCell>
                   <TableCell>{product.sku}</TableCell>
-                  <TableCell><Badge variant="outline">{product.category}</Badge></TableCell>
+                  <TableCell><Badge variant="outline">{product.categoryId}</Badge></TableCell>
                   <TableCell>
                     <span className={cn({ "text-red-500 font-bold": product.stock === 0, "text-yellow-500 font-bold": product.stock > 0 && product.stock < 50})}>
                       {product.stock} {product.unitOfMeasure}
@@ -124,7 +130,7 @@ export default function ProductsPage() {
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem>Edit</DropdownMenuItem>
                         <DropdownMenuItem>View History</DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleDeleteProduct(product.id)} className="text-destructive">Delete</DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>

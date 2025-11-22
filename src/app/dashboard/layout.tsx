@@ -4,6 +4,8 @@ import Link from "next/link";
 import {
   ArrowRightLeft,
   Boxes,
+  Building,
+  Contact,
   LayoutDashboard,
   LogOut,
   Package,
@@ -63,7 +65,9 @@ export default function DashboardLayout({
   }, [user, isUserLoading, router]);
 
   const handleLogout = () => {
-    signOut(auth);
+    if(auth) {
+      signOut(auth);
+    }
     router.push('/');
   };
 
@@ -87,7 +91,7 @@ export default function DashboardLayout({
         <SidebarContent>
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton asChild tooltip="Dashboard" isActive>
+              <SidebarMenuButton asChild tooltip="Dashboard">
                 <Link href="/dashboard">
                   <LayoutDashboard />
                   <span>Dashboard</span>
@@ -138,7 +142,7 @@ export default function DashboardLayout({
               </CollapsibleContent>
             </Collapsible>
             
-            <Collapsible className="w-full">
+            <Collapsible className="w-full" defaultOpen>
               <CollapsibleTrigger asChild>
                  <SidebarMenuItem>
                     <SidebarMenuButton className="justify-start" tooltip="Settings">
@@ -152,6 +156,16 @@ export default function DashboardLayout({
                     <SidebarMenuSubItem>
                         <SidebarMenuSubButton asChild>
                             <Link href="/dashboard/settings/warehouses"><Warehouse /> Warehouses</Link>
+                        </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                     <SidebarMenuSubItem>
+                        <SidebarMenuSubButton asChild>
+                            <Link href="/dashboard/settings/suppliers"><Building /> Suppliers</Link>
+                        </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                        <SidebarMenuSubButton asChild>
+                            <Link href="/dashboard/settings/customers"><Contact /> Customers</Link>
                         </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                 </SidebarMenuSub>
