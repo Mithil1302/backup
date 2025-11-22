@@ -11,11 +11,12 @@ import type { Warehouse } from "@/lib/types";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 
 export default function WarehousesPage() {
   const firestore = useFirestore();
-  const warehousesCollection = firestore ? collection(firestore, 'warehouses') : null;
+  
+  const warehousesCollection = useMemo(() => firestore ? collection(firestore, 'warehouses') : null, [firestore]);
   const { data: warehouses, isLoading } = useCollection<Warehouse>(warehousesCollection);
   
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -120,8 +121,9 @@ export default function WarehousesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading && <TableRow><TableCell colSpan={4}>Loading...</TableCell></TableRow>}
-              {warehouses && warehouses.map((warehouse) => (
+              {isLoading && <TableRow><TableCell colSpan={4} className="text-center">Loading...</TableCell></TableRow>}
+              {!isLoading && warehouses.length === 0 && <TableRow><TableCell colSpan={4} className="text-center">No warehouses found.</TableCell></TableRow>}
+              {warehouses.map((warehouse) => (
                 <TableRow key={warehouse.id}>
                   <TableCell className="font-medium">{warehouse.name}</TableCell>
                   <TableCell>{warehouse.location}</TableCell>

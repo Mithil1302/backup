@@ -11,11 +11,12 @@ import type { Customer } from "@/lib/types";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 
 export default function CustomersPage() {
   const firestore = useFirestore();
-  const customersCollection = firestore ? collection(firestore, 'customers') : null;
+  
+  const customersCollection = useMemo(() => firestore ? collection(firestore, 'customers') : null, [firestore]);
   const { data: customers, isLoading } = useCollection<Customer>(customersCollection);
   
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -120,8 +121,9 @@ export default function CustomersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading && <TableRow><TableCell colSpan={4}>Loading...</TableCell></TableRow>}
-              {customers && customers.map((customer) => (
+              {isLoading && <TableRow><TableCell colSpan={4} className="text-center">Loading...</TableCell></TableRow>}
+              {!isLoading && customers.length === 0 && <TableRow><TableCell colSpan={4} className="text-center">No customers found.</TableCell></TableRow>}
+              {customers.map((customer) => (
                 <TableRow key={customer.id}>
                   <TableCell className="font-medium">{customer.name}</TableCell>
                   <TableCell>{customer.contactEmail}</TableCell>

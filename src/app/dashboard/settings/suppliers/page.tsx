@@ -11,11 +11,11 @@ import type { Supplier } from "@/lib/types";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 
 export default function SuppliersPage() {
   const firestore = useFirestore();
-  const suppliersCollection = firestore ? collection(firestore, 'suppliers') : null;
+  const suppliersCollection = useMemo(() => firestore ? collection(firestore, 'suppliers') : null, [firestore]);
   const { data: suppliers, isLoading } = useCollection<Supplier>(suppliersCollection);
 
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -113,8 +113,9 @@ export default function SuppliersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading && <TableRow><TableCell colSpan={3}>Loading...</TableCell></TableRow>}
-              {suppliers && suppliers.map((supplier) => (
+              {isLoading && <TableRow><TableCell colSpan={3} className="text-center">Loading...</TableCell></TableRow>}
+              {!isLoading && suppliers.length === 0 && <TableRow><TableCell colSpan={3} className="text-center">No suppliers found.</TableCell></TableRow>}
+              {suppliers.map((supplier) => (
                 <TableRow key={supplier.id}>
                   <TableCell className="font-medium">{supplier.name}</TableCell>
                   <TableCell>{supplier.contactEmail}</TableCell>

@@ -28,7 +28,8 @@ export default function DeliveriesPage() {
     }, [firestore, user?.uid]);
     const { data: deliveries, isLoading } = useCollection<DeliveryOrder>(deliveriesCollection);
 
-    const { data: customers } = useCollection<Customer>(firestore ? collection(firestore, 'customers') : null);
+    const customersCollection = useMemo(() => firestore ? collection(firestore, 'customers') : null, [firestore]);
+    const { data: customers } = useCollection<Customer>(customersCollection);
 
     const getStatusVariant = (status: string) => {
         switch (status) {
@@ -123,8 +124,8 @@ export default function DeliveriesPage() {
             </TableHeader>
             <TableBody>
               {isLoading && <TableRow><TableCell colSpan={5} className="text-center">Loading...</TableCell></TableRow>}
-              {!isLoading && deliveries?.length === 0 && <TableRow><TableCell colSpan={5} className="text-center">No delivery orders found.</TableCell></TableRow>}
-              {deliveries?.map((delivery) => (
+              {!isLoading && deliveries.length === 0 && <TableRow><TableCell colSpan={5} className="text-center">No delivery orders found.</TableCell></TableRow>}
+              {deliveries.map((delivery) => (
                 <TableRow key={delivery.id}>
                   <TableCell className="font-medium">DO-{delivery.id.substring(0, 6).toUpperCase()}</TableCell>
                    <TableCell>{customers?.find(c => c.id === delivery.customerId)?.name || 'N/A'}</TableCell>

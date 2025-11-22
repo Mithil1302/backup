@@ -28,7 +28,8 @@ export default function ReceiptsPage() {
     }, [firestore, user?.uid]);
     const { data: receipts, isLoading } = useCollection<Receipt>(receiptsCollection);
 
-    const { data: suppliers } = useCollection<Supplier>(firestore ? collection(firestore, 'suppliers') : null);
+    const suppliersCollection = useMemo(() => firestore ? collection(firestore, 'suppliers') : null, [firestore]);
+    const { data: suppliers } = useCollection<Supplier>(suppliersCollection);
 
     const getStatusVariant = (status: string) => {
         switch (status) {
@@ -123,8 +124,8 @@ export default function ReceiptsPage() {
             </TableHeader>
             <TableBody>
               {isLoading && <TableRow><TableCell colSpan={5} className="text-center">Loading...</TableCell></TableRow>}
-              {!isLoading && receipts?.length === 0 && <TableRow><TableCell colSpan={5} className="text-center">No receipts found.</TableCell></TableRow>}
-              {receipts?.map((receipt) => (
+              {!isLoading && receipts.length === 0 && <TableRow><TableCell colSpan={5} className="text-center">No receipts found.</TableCell></TableRow>}
+              {receipts.map((receipt) => (
                 <TableRow key={receipt.id}>
                   <TableCell className="font-medium">RCPT-{receipt.id.substring(0, 6).toUpperCase()}</TableCell>
                   <TableCell>{suppliers?.find(s => s.id === receipt.supplierId)?.name || 'N/A'}</TableCell>

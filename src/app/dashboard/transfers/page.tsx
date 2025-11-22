@@ -27,8 +27,11 @@ export default function TransfersPage() {
     }, [firestore, user?.uid]);
     const { data: transfers, isLoading } = useCollection<InternalTransfer>(transfersCollection);
 
-    const { data: warehouses } = useCollection<Warehouse>(firestore ? collection(firestore, 'warehouses') : null);
-    const { data: products } = useCollection<Product>(firestore ? collection(firestore, 'products') : null);
+    const warehousesCollection = useMemo(() => firestore ? collection(firestore, 'warehouses') : null, [firestore]);
+    const { data: warehouses } = useCollection<Warehouse>(warehousesCollection);
+
+    const productsCollection = useMemo(() => firestore ? collection(firestore, 'products') : null, [firestore]);
+    const { data: products } = useCollection<Product>(productsCollection);
 
     const [isSheetOpen, setIsSheetOpen] = useState(false);
 
@@ -162,8 +165,8 @@ export default function TransfersPage() {
             </TableHeader>
             <TableBody>
               {isLoading && <TableRow><TableCell colSpan={8} className="text-center">Loading...</TableCell></TableRow>}
-              {!isLoading && transfers?.length === 0 && <TableRow><TableCell colSpan={8} className="text-center">No transfers found.</TableCell></TableRow>}
-              {transfers?.map((transfer) => (
+              {!isLoading && transfers.length === 0 && <TableRow><TableCell colSpan={8} className="text-center">No transfers found.</TableCell></TableRow>}
+              {transfers.map((transfer) => (
                 <TableRow key={transfer.id}>
                   <TableCell className="font-medium">TR-{transfer.id.substring(0,6).toUpperCase()}</TableCell>                  
                   <TableCell>{getProductName(transfer.productId)}</TableCell>

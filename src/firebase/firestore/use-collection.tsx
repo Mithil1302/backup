@@ -20,7 +20,7 @@ export type WithId<T> = T & { id: string };
  * @template T Type of the document data.
  */
 export interface UseCollectionResult<T> {
-  data: WithId<T>[] | null; // Document data with ID, or null.
+  data: WithId<T>[]; // Document data with ID. Defaults to an empty array.
   isLoading: boolean;       // True if loading.
   error: FirestoreError | Error | null; // Error object, or null.
 }
@@ -50,9 +50,9 @@ export function useCollection<T = any>(
     targetRefOrQuery: CollectionReference<DocumentData> | Query<DocumentData> | null | undefined,
 ): UseCollectionResult<T> {
   type ResultItemType = WithId<T>;
-  type StateDataType = ResultItemType[] | null;
+  type StateDataType = ResultItemType[];
 
-  const [data, setData] = useState<StateDataType>(null);
+  const [data, setData] = useState<StateDataType>([]); // Default to empty array
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<FirestoreError | Error | null>(null);
 
@@ -62,7 +62,12 @@ export function useCollection<T = any>(
     if (targetRefOrQuery.type === 'collection') {
       return (targetRefOrQuery as CollectionReference).path;
     }
-    return (targetRefOrQuery as Query)._query.path.toString() + JSON.stringify((targetRefOrQuery as Query)._query.filters);
+    // A more robust way to stringify a query
+    const queryAsInternal = targetRefOrQuery as InternalQuery;
+    const path = queryAsInternal._query.path.canonicalString();
+    const filters = (targetRefOrQuery as Query)._query.filters.map(f => f.toString()).join();
+    const orderBy = (targetRefOrQuery as Query)._query.explicitOrderBy.map(o => `${o.field.canonicalString()}_${o.dir}`).join();
+    return `${path}|${filters}|${orderBy}`;
 
   }, [targetRefOrQuery]);
 
@@ -70,7 +75,7 @@ export function useCollection<T = any>(
     // If the query/ref is explicitly null or undefined, it means we are waiting for dependencies.
     // Set loading to true and clear previous data/errors.
     if (!targetRefOrQuery) {
-      setData(null);
+      setData([]);
       setIsLoading(true);
       setError(null);
       return;
@@ -100,7 +105,7 @@ export function useCollection<T = any>(
         })
 
         setError(contextualError)
-        setData(null)
+        setData([])
         setIsLoading(false)
 
         // trigger global error propagation

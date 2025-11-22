@@ -58,9 +58,9 @@ export default function Dashboard() {
   // Recent Activity Combination
   const recentActivities = useMemo(() => {
     const allActivities = [
-      ...(receipts || []).map(r => ({ ...r, type: 'Receipt', date: r.receiptDate, ref: `RCPT-${r.id.substring(0, 6).toUpperCase()}` })),
-      ...(deliveries || []).map(d => ({ ...d, type: 'Delivery', date: d.deliveryDate, ref: `DO-${d.id.substring(0, 6).toUpperCase()}` })),
-      ...(transfers || []).map(t => ({ ...t, type: 'Transfer', date: t.transferDate, ref: `TRNS-${t.id.substring(0, 6).toUpperCase()}` })),
+      ...receipts.map(r => ({ ...r, type: 'Receipt', date: r.receiptDate, ref: `RCPT-${r.id.substring(0, 6).toUpperCase()}` })),
+      ...deliveries.map(d => ({ ...d, type: 'Delivery', date: d.deliveryDate, ref: `DO-${d.id.substring(0, 6).toUpperCase()}` })),
+      ...transfers.map(t => ({ ...t, type: 'Transfer', date: t.transferDate, ref: `TRNS-${t.id.substring(0, 6).toUpperCase()}` })),
     ];
     return allActivities.sort((a, b) => (b.date?.toMillis() || 0) - (a.date?.toMillis() || 0)).slice(0, 7);
   }, [receipts, deliveries, transfers]);

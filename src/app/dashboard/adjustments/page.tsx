@@ -21,8 +21,11 @@ export default function AdjustmentsPage() {
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [countedQty, setCountedQty] = useState<number | string>('');
 
-  const { data: products } = useCollection<Product>(firestore ? collection(firestore, 'products') : null);
-  const { data: warehouses } = useCollection<Warehouse>(firestore ? collection(firestore, 'warehouses') : null);
+  const productsCollection = useMemo(() => firestore ? collection(firestore, 'products') : null, [firestore]);
+  const { data: products } = useCollection<Product>(productsCollection);
+
+  const warehousesCollection = useMemo(() => firestore ? collection(firestore, 'warehouses') : null, [firestore]);
+  const { data: warehouses } = useCollection<Warehouse>(warehousesCollection);
 
   const adjustmentsCollection = useMemo(() => {
     if (!firestore || !user?.uid) return null;
@@ -34,9 +37,7 @@ export default function AdjustmentsPage() {
     return products?.find(p => p.id === selectedProductId);
   }, [products, selectedProductId]);
 
-  // This is a simplified stock lookup. In a real app, you'd have a dedicated stock collection.
   const currentStock = useMemo(() => {
-    // The stock property was added to the Product type, ensure it exists.
     return selectedProduct?.stock ?? 0;
   }, [selectedProduct]);
 
@@ -141,8 +142,8 @@ export default function AdjustmentsPage() {
                     </TableHeader>
                     <TableBody>
                         {isLoading && <TableRow><TableCell colSpan={4} className="text-center">Loading...</TableCell></TableRow>}
-                        {!isLoading && adjustments?.length === 0 && <TableRow><TableCell colSpan={4} className="text-center">No adjustments found.</TableCell></TableRow>}
-                        {adjustments?.map(adj => (
+                        {!isLoading && adjustments.length === 0 && <TableRow><TableCell colSpan={4} className="text-center">No adjustments found.</TableCell></TableRow>}
+                        {adjustments.map(adj => (
                            <TableRow key={adj.id}>
                                 <TableCell>{getProductName(adj.productId)}</TableCell>
                                 <TableCell>{getWarehouseName(adj.warehouseId)}</TableCell>

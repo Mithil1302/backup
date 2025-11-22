@@ -14,13 +14,18 @@ import { cn } from "@/lib/utils";
 import { useCollection, useFirestore, addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase";
 import { collection, doc } from "firebase/firestore";
 import type { Product } from "@/lib/types";
-import React, { useState, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function ProductsPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
-  const productsCollection = firestore ? collection(firestore, 'products') : null;
+  
+  const productsCollection = useMemo(() => {
+    if (!firestore) return null;
+    return collection(firestore, 'products');
+  }, [firestore]);
+
   const { data: products, isLoading } = useCollection<Product>(productsCollection);
   
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -152,7 +157,8 @@ export default function ProductsPage() {
             </TableHeader>
             <TableBody>
               {isLoading && <TableRow><TableCell colSpan={5} className="text-center">Loading...</TableCell></TableRow>}
-              {products && products.map((product) => (
+              {!isLoading && products.length === 0 && <TableRow><TableCell colSpan={5} className="text-center">No products found.</TableCell></TableRow>}
+              {products.map((product) => (
                 <TableRow key={product.id}>
                   <TableCell className="font-medium">{product.name}</TableCell>
                   <TableCell>{product.sku}</TableCell>
