@@ -5,16 +5,17 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PlusCircle, Search } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, useUser } from "@/firebase";
 import { collection, serverTimestamp } from "firebase/firestore";
 import type { Product, Warehouse, StockAdjustment } from "@/lib/types";
 import React, { useState, useMemo } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function AdjustmentsPage() {
   const firestore = useFirestore();
   const { user } = useUser();
+  const { toast } = useToast();
 
   const [selectedWarehouseId, setSelectedWarehouseId] = useState<string | null>(null);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
@@ -34,7 +35,7 @@ export default function AdjustmentsPage() {
   }, [products, selectedProductId]);
 
   const difference = useMemo(() => {
-    if (selectedProduct && countedQty !== '') {
+    if (selectedProduct && countedQty !== '' && typeof selectedProduct.stock === 'number') {
       return Number(countedQty) - selectedProduct.stock;
     }
     return 0;
@@ -43,17 +44,19 @@ export default function AdjustmentsPage() {
   const handleApplyAdjustment = () => {
     if (!adjustmentsCollection || !selectedWarehouseId || !selectedProductId || countedQty === '') return;
     
-    const newAdjustment = {
+    addDocumentNonBlocking(adjustmentsCollection, {
       warehouseId: selectedWarehouseId,
       productId: selectedProductId,
       countedQuantity: Number(countedQty),
       adjustmentDate: serverTimestamp(),
-      // We would also update the product's stock level in a real app, likely in a cloud function for consistency
-    };
-
-    addDocumentNonBlocking(adjustmentsCollection, newAdjustment);
-    setSelectedProductId(null);
-    setCountedQty('');
+    }).then(() => {
+        toast({
+            title: "Adjustment Applied",
+            description: "The stock level has been recorded.",
+        });
+        setSelectedProductId(null);
+        setCountedQty('');
+    });
   };
 
   const getProductName = (productId: string) => products?.find(p => p.id === productId)?.name || 'Unknown Product';
@@ -110,7 +113,7 @@ export default function AdjustmentsPage() {
                     </div>
                     {selectedProduct && (
                       <div className="space-y-2">
-                          <p className="text-sm text-muted-foreground">Recorded Quantity: <span className="font-bold text-foreground">{selectedProduct.stock} {selectedProduct.unitOfMeasure}</span></p>
+                          <p className="text-sm text-muted-foreground">Recorded Quantity: <span className="font-bold text-foreground">{(selectedProduct.stock || 0)} {selectedProduct.unitOfMeasure}</span></p>
                           <p className="text-sm text-muted-foreground">Difference: <span className={`font-bold ${difference > 0 ? 'text-green-500' : difference < 0 ? 'text-red-500' : ''}`}>{difference} {selectedProduct.unitOfMeasure}</span></p>
                       </div>
                     )}
@@ -130,7 +133,8 @@ export default function AdjustmentsPage() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {isLoading && <TableRow><TableCell colSpan={4}>Loading...</TableCell></TableRow>}
+                        {isLoading && <TableRow><TableCell colSpan={4} className="text-center">Loading...</TableCell></TableRow>}
+                        {!isLoading && adjustments?.length === 0 && <TableRow><TableCell colSpan={4} className="text-center">No adjustments found.</TableCell></TableRow>}
                         {adjustments?.map(adj => (
                            <TableRow key={adj.id}>
                                 <TableCell>{getProductName(adj.productId)}</TableCell>

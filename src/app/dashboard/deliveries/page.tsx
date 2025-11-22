@@ -10,14 +10,17 @@ import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, u
 import { collection, serverTimestamp } from "firebase/firestore";
 import type { DeliveryOrder, Customer } from "@/lib/types";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import React from "react";
+import React, {useState} from "react";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
 
 
 export default function DeliveriesPage() {
     const firestore = useFirestore();
     const { user } = useUser();
+    const { toast } = useToast();
+    const [isSheetOpen, setIsSheetOpen] = useState(false);
 
     const deliveriesCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'deliveryOrders') : null, [firestore, user]);
     const { data: deliveries, isLoading } = useCollection<DeliveryOrder>(deliveriesCollection);
@@ -40,21 +43,36 @@ export default function DeliveriesPage() {
       event.preventDefault();
       if (!deliveriesCollection) return;
       const formData = new FormData(event.currentTarget);
-      const newDelivery = {
-        customerId: formData.get('customerId') as string,
+      const customerId = formData.get('customerId') as string;
+
+      if (!customerId) {
+        toast({
+            variant: "destructive",
+            title: "Customer not selected",
+            description: "Please select a customer for the delivery.",
+        });
+        return;
+      }
+
+      addDocumentNonBlocking(deliveriesCollection, {
+        customerId,
         deliveryDate: serverTimestamp(),
         status: 'Draft',
-      };
-      addDocumentNonBlocking(deliveriesCollection, newDelivery);
-      (event.target as HTMLFormElement).reset();
+      }).then(() => {
+        toast({
+            title: "Delivery Order Created",
+            description: "The new delivery order has been saved in draft status.",
+        });
+        setIsSheetOpen(false);
+      });
     };
     
   return (
     <div className="flex flex-col gap-6">
       <PageHeader title="Delivery Orders">
-        <Sheet>
+        <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
             <SheetTrigger asChild>
-                <Button size="sm" className="flex items-center gap-2">
+                <Button size="sm" className="flex items-center gap-2" onClick={() => setIsSheetOpen(true)}>
                 <PlusCircle className="h-4 w-4" />
                 <span>New Delivery Order</span>
                 </Button>
@@ -77,7 +95,7 @@ export default function DeliveriesPage() {
                         </Select>
                     </div>
                     <div className="flex justify-end gap-2 mt-4">
-                        <SheetTrigger asChild><Button variant="outline">Cancel</Button></SheetTrigger>
+                        <Button variant="outline" type="button" onClick={() => setIsSheetOpen(false)}>Cancel</Button>
                         <Button type="submit">Create Delivery</Button>
                     </div>
                 </form>
@@ -95,16 +113,19 @@ export default function DeliveriesPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Reference</TableHead>
+                <TableHead>Customer</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Date</TableHead>
                 <TableHead><span className="sr-only">Actions</span></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading && <TableRow><TableCell colSpan={4}>Loading...</TableCell></TableRow>}
+              {isLoading && <TableRow><TableCell colSpan={5}>Loading...</TableCell></TableRow>}
+              {!isLoading && deliveries?.length === 0 && <TableRow><TableCell colSpan={5} className="text-center">No delivery orders found.</TableCell></TableRow>}
               {deliveries && deliveries.map((delivery) => (
                 <TableRow key={delivery.id}>
                   <TableCell className="font-medium">DO-{delivery.id.substring(0, 6).toUpperCase()}</TableCell>
+                   <TableCell>{customers?.find(c => c.id === delivery.customerId)?.name || 'N/A'}</TableCell>
                   <TableCell><Badge variant={getStatusVariant(delivery.status)}>{delivery.status}</Badge></TableCell>
                   <TableCell>{delivery.deliveryDate?.toDate().toLocaleDateString()}</TableCell>
                   <TableCell>

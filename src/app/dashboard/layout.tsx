@@ -38,16 +38,17 @@ import {
   SidebarFooter,
   SidebarMenuSub,
   SidebarMenuSubButton,
-  SidebarMenuSubItem
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/logo";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Separator } from "@/components/ui/separator";
-import { useAuth, useUser } from "@/firebase";
+import { useAuth, useUser, useFirestore, useCollection } from "@/firebase";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { signOut } from "firebase/auth";
+import { seedDatabase } from "@/lib/seed";
+import { collection } from "firebase/firestore";
 
 export default function DashboardLayout({
   children,
@@ -56,7 +57,26 @@ export default function DashboardLayout({
 }) {
   const { user, isUserLoading } = useUser();
   const auth = useAuth();
+  const firestore = useFirestore();
   const router = useRouter();
+
+  const [hasSeeded, setHasSeeded] = useState(false);
+
+  // Check if data exists to prevent re-seeding
+  const productsCollection = useCollection(collection(firestore, 'products'));
+
+  useEffect(() => {
+    if (!productsCollection.isLoading && productsCollection.data?.length === 0 && !hasSeeded) {
+      console.log('No products found, seeding database...');
+      seedDatabase(firestore).then(() => {
+        setHasSeeded(true);
+        console.log('Database seeded successfully.');
+      });
+    } else if (productsCollection.data && productsCollection.data.length > 0) {
+      // If data already exists, mark as seeded to prevent future attempts
+      if (!hasSeeded) setHasSeeded(true);
+    }
+  }, [productsCollection.isLoading, productsCollection.data, firestore, hasSeeded]);
 
   useEffect(() => {
     if (!isUserLoading && !user) {
@@ -71,7 +91,7 @@ export default function DashboardLayout({
     router.push('/');
   };
 
-  if (isUserLoading || !user) {
+  if (isUserLoading || !user || !hasSeeded) {
     return (
         <div className="flex min-h-screen items-center justify-center">
             <p>Loading...</p>

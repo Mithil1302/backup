@@ -10,14 +10,17 @@ import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, u
 import { collection, serverTimestamp } from "firebase/firestore";
 import type { Receipt } from "@/lib/types";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import React from "react";
+import React, { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Supplier } from "@/lib/types";
+import { useToast } from "@/hooks/use-toast";
 
 export default function ReceiptsPage() {
     const firestore = useFirestore();
     const { user } = useUser();
+    const { toast } = useToast();
+    const [isSheetOpen, setIsSheetOpen] = useState(false);
 
     const receiptsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'receipts') : null, [firestore, user]);
     const { data: receipts, isLoading } = useCollection<Receipt>(receiptsCollection);
@@ -40,21 +43,36 @@ export default function ReceiptsPage() {
       event.preventDefault();
       if (!receiptsCollection) return;
       const formData = new FormData(event.currentTarget);
-      const newReceipt = {
-        supplierId: formData.get('supplierId') as string,
+      const supplierId = formData.get('supplierId') as string;
+      
+      if (!supplierId) {
+        toast({
+            variant: "destructive",
+            title: "Supplier not selected",
+            description: "Please select a supplier for the receipt.",
+        });
+        return;
+      }
+      
+      addDocumentNonBlocking(receiptsCollection, {
+        supplierId: supplierId,
         receiptDate: serverTimestamp(),
         status: 'Draft',
-      };
-      addDocumentNonBlocking(receiptsCollection, newReceipt);
-      (event.target as HTMLFormElement).reset();
+      }).then(() => {
+        toast({
+            title: "Receipt Created",
+            description: "The new receipt has been saved in draft status.",
+        });
+        setIsSheetOpen(false);
+      });
     };
 
   return (
     <div className="flex flex-col gap-6">
       <PageHeader title="Receipts">
-        <Sheet>
+        <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
             <SheetTrigger asChild>
-                <Button size="sm" className="flex items-center gap-2">
+                <Button size="sm" className="flex items-center gap-2" onClick={() => setIsSheetOpen(true)}>
                   <PlusCircle className="h-4 w-4" />
                   <span>New Receipt</span>
                 </Button>
@@ -77,7 +95,7 @@ export default function ReceiptsPage() {
                         </Select>
                     </div>
                     <div className="flex justify-end gap-2 mt-4">
-                        <SheetTrigger asChild><Button variant="outline">Cancel</Button></SheetTrigger>
+                        <Button variant="outline" type="button" onClick={() => setIsSheetOpen(false)}>Cancel</Button>
                         <Button type="submit">Create Receipt</Button>
                     </div>
                 </form>
@@ -95,16 +113,19 @@ export default function ReceiptsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Reference</TableHead>
+                <TableHead>Supplier</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Date</TableHead>
                 <TableHead><span className="sr-only">Actions</span></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading && <TableRow><TableCell colSpan={4}>Loading...</TableCell></TableRow>}
+              {isLoading && <TableRow><TableCell colSpan={5}>Loading...</TableCell></TableRow>}
+              {!isLoading && receipts?.length === 0 && <TableRow><TableCell colSpan={5} className="text-center">No receipts found.</TableCell></TableRow>}
               {receipts && receipts.map((receipt) => (
                 <TableRow key={receipt.id}>
                   <TableCell className="font-medium">RCPT-{receipt.id.substring(0, 6).toUpperCase()}</TableCell>
+                  <TableCell>{suppliers?.find(s => s.id === receipt.supplierId)?.name || 'N/A'}</TableCell>
                   <TableCell><Badge variant={getStatusVariant(receipt.status)}>{receipt.status}</Badge></TableCell>
                   <TableCell>{receipt.receiptDate?.toDate().toLocaleDateString()}</TableCell>
                   <TableCell>
