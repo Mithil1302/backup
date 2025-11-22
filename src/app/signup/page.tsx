@@ -12,25 +12,51 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/logo";
-import { useAuth, initiateEmailSignUp } from "@/firebase";
+import { useAuth, initiateEmailSignUp, useUser } from "@/firebase";
 import { useRouter } from "next/navigation";
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { updateProfile } from "firebase/auth";
 
 export default function SignupPage() {
   const auth = useAuth();
   const router = useRouter();
+  const { user, isUserLoading } = useUser();
 
-  const handleSignUp = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    const email = formData.get('email') as string;
-    const password = formData.get('password') as string;
-    
-    if(email && password) {
-      initiateEmailSignUp(auth, email, password);
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  
+  useEffect(() => {
+    if (!isUserLoading && user) {
       router.push('/dashboard');
     }
+  }, [user, isUserLoading, router]);
+
+  const handleSignUp = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    
+    if(auth && email && password) {
+      initiateEmailSignUp(auth, email, password)
+        .then(userCredential => {
+            if(userCredential?.user) {
+                return updateProfile(userCredential.user, {
+                    displayName: name
+                });
+            }
+        })
+        .catch(error => {
+            console.error("Error during sign up:", error);
+        });
+    }
   };
+
+  if (isUserLoading || user) {
+    return (
+        <div className="flex min-h-screen items-center justify-center">
+            <p>Loading...</p>
+        </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
@@ -49,7 +75,14 @@ export default function SignupPage() {
             <div className="grid gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="first-name">Name</Label>
-                <Input id="first-name" name="name" placeholder="Max" required />
+                <Input 
+                  id="first-name" 
+                  name="name" 
+                  placeholder="Max" 
+                  required 
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
               </div>
             </div>
             <div className="grid gap-2">
@@ -60,11 +93,19 @@ export default function SignupPage() {
                 type="email"
                 placeholder="m@example.com"
                 required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
               />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="password">Password</Label>
-              <Input id="password" name="password" type="password" />
+              <Input 
+                id="password" 
+                name="password" 
+                type="password" 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
             </div>
             <Button type="submit" className="w-full">
               Create an account
