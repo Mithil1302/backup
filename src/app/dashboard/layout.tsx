@@ -75,14 +75,14 @@ export default function DashboardLayout({
 
     // User is authenticated, now check for data and seed if necessary
     const checkAndSeedData = async () => {
-      if (firestore) {
+      if (firestore && user.uid) {
         // Only check one collection to see if data exists.
         const productsCollection = collection(firestore, 'products');
         const productSnapshot = await getDocs(productsCollection);
         if (productSnapshot.empty) {
           console.log('No products found, seeding database...');
           try {
-            await seedDatabase(firestore);
+            await seedDatabase(firestore, user.uid);
             console.log('Database seeded successfully.');
           } catch (error) {
             console.error("Error seeding database: ", error);
