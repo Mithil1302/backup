@@ -5,18 +5,21 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { MoreHorizontal, PlusCircle } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
-import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase";
+import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase";
 import { collection, doc } from "firebase/firestore";
 import type { Warehouse } from "@/lib/types";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import React from "react";
+import React, { useState } from "react";
 
 export default function WarehousesPage() {
   const firestore = useFirestore();
   const warehousesCollection = useMemoFirebase(() => collection(firestore, 'warehouses'), [firestore]);
   const { data: warehouses, isLoading } = useCollection<Warehouse>(warehousesCollection);
+  
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [editingWarehouse, setEditingWarehouse] = useState<Warehouse | null>(null);
 
   const handleAddWarehouse = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -27,7 +30,22 @@ export default function WarehousesPage() {
       capacity: Number(formData.get('capacity') || 0),
     };
     addDocumentNonBlocking(warehousesCollection, newWarehouse);
-    (event.target as HTMLFormElement).reset();
+    setIsSheetOpen(false);
+  };
+  
+  const handleUpdateWarehouse = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!firestore || !editingWarehouse) return;
+    const formData = new FormData(event.currentTarget);
+    const updatedWarehouse = {
+      name: formData.get('name') as string,
+      location: formData.get('location') as string,
+      capacity: Number(formData.get('capacity') || 0),
+    };
+    const warehouseDoc = doc(firestore, 'warehouses', editingWarehouse.id);
+    updateDocumentNonBlocking(warehouseDoc, updatedWarehouse);
+    setIsSheetOpen(false);
+    setEditingWarehouse(null);
   };
   
   const handleDelete = (id: string) => {
@@ -35,42 +53,50 @@ export default function WarehousesPage() {
     const docRef = doc(firestore, 'warehouses', id);
     deleteDocumentNonBlocking(docRef);
   }
+  
+  const handleEditClick = (warehouse: Warehouse) => {
+    setEditingWarehouse(warehouse);
+    setIsSheetOpen(true);
+  };
+
+  const handleSheetClose = () => {
+    setIsSheetOpen(false);
+    setEditingWarehouse(null);
+  };
 
   return (
     <div className="flex flex-col gap-6">
       <PageHeader title="Warehouses">
-        <Sheet>
+        <Sheet open={isSheetOpen} onOpenChange={handleSheetClose}>
           <SheetTrigger asChild>
-            <Button size="sm" className="flex items-center gap-2">
+            <Button size="sm" className="flex items-center gap-2" onClick={() => setIsSheetOpen(true)}>
               <PlusCircle className="h-4 w-4" />
               <span>Add Warehouse</span>
             </Button>
           </SheetTrigger>
           <SheetContent>
             <SheetHeader>
-              <SheetTitle>Add a new warehouse</SheetTitle>
+              <SheetTitle>{editingWarehouse ? 'Edit Warehouse' : 'Add a new warehouse'}</SheetTitle>
               <SheetDescription>
-                Fill in the details below to create a new warehouse.
+                {editingWarehouse ? 'Update the details of your warehouse.' : 'Fill in the details below to create a new warehouse.'}
               </SheetDescription>
             </SheetHeader>
-            <form onSubmit={handleAddWarehouse} className="grid gap-4 py-4">
+            <form onSubmit={editingWarehouse ? handleUpdateWarehouse : handleAddWarehouse} className="grid gap-4 py-4">
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="name" className="text-right">Name</Label>
-                <Input name="name" id="name" placeholder="Main Warehouse" className="col-span-3" required />
+                <Input name="name" id="name" defaultValue={editingWarehouse?.name} placeholder="Main Warehouse" className="col-span-3" required />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="location" className="text-right">Location</Label>
-                <Input name="location" id="location" placeholder="123 Industrial Rd" className="col-span-3" required />
+                <Input name="location" id="location" defaultValue={editingWarehouse?.location} placeholder="123 Industrial Rd" className="col-span-3" required />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="capacity" className="text-right">Capacity</Label>
-                <Input name="capacity" id="capacity" type="number" placeholder="10000" className="col-span-3" />
+                <Input name="capacity" id="capacity" type="number" defaultValue={editingWarehouse?.capacity} placeholder="10000" className="col-span-3" />
               </div>
               <div className="flex justify-end gap-2 mt-4">
-                 <SheetTrigger asChild>
-                   <Button variant="outline">Cancel</Button>
-                 </SheetTrigger>
-                <Button type="submit">Create Warehouse</Button>
+                <Button variant="outline" type="button" onClick={handleSheetClose}>Cancel</Button>
+                <Button type="submit">{editingWarehouse ? 'Save Changes' : 'Create Warehouse'}</Button>
               </div>
             </form>
           </SheetContent>
@@ -108,7 +134,7 @@ export default function WarehousesPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem>Edit</DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => handleEditClick(warehouse)}>Edit</DropdownMenuItem>
                         <DropdownMenuItem>View Stock</DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleDelete(warehouse.id)} className="text-destructive">Delete</DropdownMenuItem>
                       </DropdownMenuContent>

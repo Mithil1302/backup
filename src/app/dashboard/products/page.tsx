@@ -11,15 +11,18 @@ import { Label } from "@/components/ui/label";
 import { MoreHorizontal, PlusCircle } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { cn } from "@/lib/utils";
-import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase";
+import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase";
 import { collection, doc } from "firebase/firestore";
 import type { Product } from "@/lib/types";
-import React from "react";
+import React, { useState, useEffect } from "react";
 
 export default function ProductsPage() {
   const firestore = useFirestore();
   const productsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'products') : null, [firestore]);
   const { data: products, isLoading } = useCollection<Product>(productsCollection);
+  
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
   const handleAddProduct = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -28,12 +31,29 @@ export default function ProductsPage() {
     const newProduct = {
       name: formData.get('name') as string,
       sku: formData.get('sku') as string,
-      categoryId: formData.get('category') as string, // Changed from category
+      categoryId: formData.get('category') as string,
       unitOfMeasure: formData.get('uom') as string,
       stock: Number(formData.get('stock') || 0),
     };
     addDocumentNonBlocking(productsCollection, newProduct);
-    (event.target as HTMLFormElement).reset();
+    setIsSheetOpen(false);
+  };
+  
+  const handleUpdateProduct = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!firestore || !editingProduct) return;
+    const formData = new FormData(event.currentTarget);
+    const updatedProduct = {
+      name: formData.get('name') as string,
+      sku: formData.get('sku') as string,
+      categoryId: formData.get('category') as string,
+      unitOfMeasure: formData.get('uom') as string,
+      stock: Number(formData.get('stock') || 0),
+    };
+    const productDoc = doc(firestore, 'products', editingProduct.id);
+    updateDocumentNonBlocking(productDoc, updatedProduct);
+    setIsSheetOpen(false);
+    setEditingProduct(null);
   };
 
   const handleDeleteProduct = (productId: string) => {
@@ -41,50 +61,58 @@ export default function ProductsPage() {
     const productDoc = doc(firestore, 'products', productId);
     deleteDocumentNonBlocking(productDoc);
   };
+  
+  const handleEditClick = (product: Product) => {
+    setEditingProduct(product);
+    setIsSheetOpen(true);
+  };
+
+  const handleSheetClose = () => {
+    setIsSheetOpen(false);
+    setEditingProduct(null);
+  }
 
   return (
     <div className="flex flex-col gap-6">
       <PageHeader title="Products">
-        <Sheet>
+        <Sheet open={isSheetOpen} onOpenChange={handleSheetClose}>
           <SheetTrigger asChild>
-            <Button size="sm" className="flex items-center gap-2">
+             <Button size="sm" className="flex items-center gap-2" onClick={() => setIsSheetOpen(true)}>
               <PlusCircle className="h-4 w-4" />
               <span>Add Product</span>
             </Button>
           </SheetTrigger>
           <SheetContent>
             <SheetHeader>
-              <SheetTitle>Add a new product</SheetTitle>
+              <SheetTitle>{editingProduct ? 'Edit Product' : 'Add a new product'}</SheetTitle>
               <SheetDescription>
-                Fill in the details below to create a new product in your inventory.
+                {editingProduct ? 'Update the details of your product.' : 'Fill in the details below to create a new product in your inventory.'}
               </SheetDescription>
             </SheetHeader>
-            <form onSubmit={handleAddProduct} className="grid gap-4 py-4">
+            <form onSubmit={editingProduct ? handleUpdateProduct : handleAddProduct} className="grid gap-4 py-4">
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="name" className="text-right">Name</Label>
-                <Input name="name" id="name" placeholder="Organic Bananas" className="col-span-3" required />
+                <Input name="name" id="name" defaultValue={editingProduct?.name} placeholder="Organic Bananas" className="col-span-3" required />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="sku" className="text-right">SKU/Code</Label>
-                <Input name="sku" id="sku" placeholder="FR-BAN-001" className="col-span-3" required />
+                <Input name="sku" id="sku" defaultValue={editingProduct?.sku} placeholder="FR-BAN-001" className="col-span-3" required />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="category" className="text-right">Category ID</Label>
-                <Input name="category" id="category" placeholder="FRUITS" className="col-span-3" required/>
+                <Input name="category" id="category" defaultValue={editingProduct?.categoryId} placeholder="FRUITS" className="col-span-3" required/>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="uom" className="text-right">Unit of Measure</Label>
-                <Input name="uom" id="uom" placeholder="kg" className="col-span-3" required/>
+                <Input name="uom" id="uom" defaultValue={editingProduct?.unitOfMeasure} placeholder="kg" className="col-span-3" required/>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="stock" className="text-right">Initial Stock</Label>
-                <Input name="stock" id="stock" type="number" placeholder="0" className="col-span-3" />
+                <Label htmlFor="stock" className="text-right">Stock</Label>
+                <Input name="stock" id="stock" type="number" defaultValue={editingProduct?.stock} placeholder="0" className="col-span-3" />
               </div>
               <div className="flex justify-end gap-2 mt-4">
-                <SheetTrigger asChild>
-                  <Button variant="outline">Cancel</Button>
-                </SheetTrigger>
-                <Button type="submit">Create Product</Button>
+                <Button variant="outline" type="button" onClick={handleSheetClose}>Cancel</Button>
+                <Button type="submit">{editingProduct ? 'Save Changes' : 'Create Product'}</Button>
               </div>
             </form>
           </SheetContent>
@@ -128,7 +156,7 @@ export default function ProductsPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem>Edit</DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => handleEditClick(product)}>Edit</DropdownMenuItem>
                         <DropdownMenuItem>View History</DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleDeleteProduct(product.id)} className="text-destructive">Delete</DropdownMenuItem>
                       </DropdownMenuContent>

@@ -5,18 +5,21 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { MoreHorizontal, PlusCircle } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
-import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase";
+import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase";
 import { collection, doc } from "firebase/firestore";
 import type { Supplier } from "@/lib/types";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import React from "react";
+import React, { useState } from "react";
 
 export default function SuppliersPage() {
   const firestore = useFirestore();
   const suppliersCollection = useMemoFirebase(() => collection(firestore, 'suppliers'), [firestore]);
   const { data: suppliers, isLoading } = useCollection<Supplier>(suppliersCollection);
+
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
 
   const handleAddSupplier = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -26,7 +29,21 @@ export default function SuppliersPage() {
       contactEmail: formData.get('email') as string,
     };
     addDocumentNonBlocking(suppliersCollection, newSupplier);
-    (event.target as HTMLFormElement).reset();
+    setIsSheetOpen(false);
+  };
+  
+  const handleUpdateSupplier = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!firestore || !editingSupplier) return;
+    const formData = new FormData(event.currentTarget);
+    const updatedSupplier = {
+      name: formData.get('name') as string,
+      contactEmail: formData.get('email') as string,
+    };
+    const supplierDoc = doc(firestore, 'suppliers', editingSupplier.id);
+    updateDocumentNonBlocking(supplierDoc, updatedSupplier);
+    setIsSheetOpen(false);
+    setEditingSupplier(null);
   };
 
   const handleDelete = (id: string) => {
@@ -34,36 +51,46 @@ export default function SuppliersPage() {
     const docRef = doc(firestore, 'suppliers', id);
     deleteDocumentNonBlocking(docRef);
   }
+  
+  const handleEditClick = (supplier: Supplier) => {
+    setEditingSupplier(supplier);
+    setIsSheetOpen(true);
+  };
+
+  const handleSheetClose = () => {
+    setIsSheetOpen(false);
+    setEditingSupplier(null);
+  };
 
   return (
     <div className="flex flex-col gap-6">
       <PageHeader title="Suppliers">
-        <Sheet>
+        <Sheet open={isSheetOpen} onOpenChange={handleSheetClose}>
           <SheetTrigger asChild>
-            <Button size="sm" className="flex items-center gap-2">
+            <Button size="sm" className="flex items-center gap-2" onClick={() => setIsSheetOpen(true)}>
               <PlusCircle className="h-4 w-4" />
               <span>Add Supplier</span>
             </Button>
           </SheetTrigger>
           <SheetContent>
             <SheetHeader>
-              <SheetTitle>Add a new supplier</SheetTitle>
+              <SheetTitle>{editingSupplier ? 'Edit Supplier' : 'Add a new supplier'}</SheetTitle>
               <SheetDescription>
-                Fill in the details below to create a new supplier.
+                {editingSupplier ? 'Update the details for your supplier.' : 'Fill in the details below to create a new supplier.'}
               </SheetDescription>
             </SheetHeader>
-            <form onSubmit={handleAddSupplier} className="grid gap-4 py-4">
+            <form onSubmit={editingSupplier ? handleUpdateSupplier : handleAddSupplier} className="grid gap-4 py-4">
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="name" className="text-right">Name</Label>
-                <Input name="name" id="name" placeholder="Global Fresh Produce" className="col-span-3" required />
+                <Input name="name" id="name" defaultValue={editingSupplier?.name} placeholder="Global Fresh Produce" className="col-span-3" required />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="email" className="text-right">Contact Email</Label>
-                <Input name="email" id="email" type="email" placeholder="contact@globalfresh.com" className="col-span-3" required />
+                <Input name="email" id="email" type="email" defaultValue={editingSupplier?.contactEmail} placeholder="contact@globalfresh.com" className="col-span-3" required />
               </div>
               <div className="flex justify-end gap-2 mt-4">
-                <SheetTrigger asChild><Button variant="outline">Cancel</Button></SheetTrigger>
-                <Button type="submit">Create Supplier</Button>
+                <Button variant="outline" type="button" onClick={handleSheetClose}>Cancel</Button>
+                <Button type="submit">{editingSupplier ? 'Save Changes' : 'Create Supplier'}</Button>
               </div>
             </form>
           </SheetContent>
@@ -99,7 +126,7 @@ export default function SuppliersPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem>Edit</DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => handleEditClick(supplier)}>Edit</DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleDelete(supplier.id)} className="text-destructive">Delete</DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
