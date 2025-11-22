@@ -72,7 +72,7 @@ export default function AdjustmentsPage() {
   const getProductName = (productId: string) => products?.find(p => p.id === productId)?.name || 'Unknown Product';
   const getWarehouseName = (warehouseId: string) => warehouses?.find(w => w.id === warehouseId)?.name || 'Unknown Warehouse';
 
-  if (isUserLoading || isProductsLoading || isWarehousesLoading) {
+  if (isUserLoading || isProductsLoading || isWarehousesLoading || isAdjustmentsLoading) {
       return <div>Loading...</div>;
   }
 
@@ -147,9 +147,9 @@ export default function AdjustmentsPage() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {isAdjustmentsLoading && <TableRow><TableCell colSpan={4} className="text-center">Loading...</TableCell></TableRow>}
-                        {!isAdjustmentsLoading && adjustments.length === 0 && <TableRow><TableCell colSpan={4} className="text-center">No adjustments found.</TableCell></TableRow>}
-                        {adjustments.map(adj => (
+                        {!adjustments && <TableRow><TableCell colSpan={4} className="text-center">Loading...</TableCell></TableRow>}
+                        {adjustments && adjustments.length === 0 && <TableRow><TableCell colSpan={4} className="text-center">No adjustments found.</TableCell></TableRow>}
+                        {adjustments && adjustments.map(adj => (
                            <TableRow key={adj.id}>
                                 <TableCell>{getProductName(adj.productId)}</TableCell>
                                 <TableCell>{getWarehouseName(adj.warehouseId)}</TableCell>

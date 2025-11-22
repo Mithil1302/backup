@@ -70,7 +70,7 @@ export default function ReceiptsPage() {
       });
     };
 
-    if (isUserLoading || isSuppliersLoading) {
+    if (isUserLoading || isSuppliersLoading || isReceiptsLoading) {
       return <div>Loading...</div>;
     }
 
@@ -127,9 +127,9 @@ export default function ReceiptsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isReceiptsLoading && <TableRow><TableCell colSpan={5} className="text-center">Loading...</TableCell></TableRow>}
-              {!isReceiptsLoading && receipts.length === 0 && <TableRow><TableCell colSpan={5} className="text-center">No receipts found.</TableCell></TableRow>}
-              {receipts.map((receipt) => (
+              {!receipts && <TableRow><TableCell colSpan={5} className="text-center">Loading...</TableCell></TableRow>}
+              {receipts && receipts.length === 0 && <TableRow><TableCell colSpan={5} className="text-center">No receipts found.</TableCell></TableRow>}
+              {receipts && receipts.map((receipt) => (
                 <TableRow key={receipt.id}>
                   <TableCell className="font-medium">RCPT-{receipt.id.substring(0, 6).toUpperCase()}</TableCell>
                   <TableCell>{suppliers?.find(s => s.id === receipt.supplierId)?.name || 'N/A'}</TableCell>

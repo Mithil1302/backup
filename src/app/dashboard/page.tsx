@@ -7,7 +7,8 @@ import { useCollection, useFirestore, useUser } from "@/firebase";
 import { collection } from "firebase/firestore";
 import type { Receipt, DeliveryOrder } from "@/lib/types";
 import { useMemo } from "react";
-import { ArrowRight } from "lucide-react";
+import Link from "next/link";
+import { ArrowUpRight } from "lucide-react";
 
 export default function Dashboard() {
   const firestore = useFirestore();
@@ -54,34 +55,33 @@ export default function Dashboard() {
   return (
     <div className="flex flex-col gap-6">
         <PageHeader title="Dashboard" />
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
             <Card>
-                <CardHeader>
-                    <CardTitle>Receipt</CardTitle>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle>Receipts</CardTitle>
+                    <Link href="/dashboard/receipts">
+                      <Button variant="outline" size="sm" className="flex items-center gap-1">
+                          All Receipts <ArrowUpRight className="h-4 w-4" />
+                      </Button>
+                    </Link>
                 </CardHeader>
-                <CardContent className="flex flex-col gap-4">
-                    <Button variant="outline" className="w-fit">
-                    {toReceiveCount} to receive
-                    </Button>
-                    <div className="flex items-center gap-4 text-sm">
-                        <span>{lateReceipts} Late</span>
-                        <span>{receipts.length} operations</span>
-                    </div>
+                <CardContent className="space-y-4">
+                    <div className="text-3xl font-bold">{toReceiveCount} To Receive</div>
+                    <p className="text-xs text-muted-foreground">{lateReceipts} late</p>
                 </CardContent>
             </Card>
             <Card>
-                <CardHeader>
-                    <CardTitle>Delivery</CardTitle>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle>Delivery Orders</CardTitle>
+                    <Link href="/dashboard/deliveries">
+                       <Button variant="outline" size="sm" className="flex items-center gap-1">
+                          All Delivery Orders <ArrowUpRight className="h-4 w-4" />
+                      </Button>
+                    </Link>
                 </CardHeader>
-                <CardContent className="flex flex-col gap-4">
-                    <Button variant="outline" className="w-fit">
-                        {toDeliverCount} to Deliver
-                    </Button>
-                    <div className="flex items-center gap-4 text-sm">
-                        <span>{lateDeliveries} Late</span>
-                        <span>{deliveries.filter(d => d.status === 'Waiting').length} waiting</span>
-                        <span>{deliveries.length} operations</span>
-                    </div>
+                <CardContent className="space-y-4">
+                   <div className="text-3xl font-bold">{toDeliverCount} To Deliver</div>
+                   <p className="text-xs text-muted-foreground">{lateDeliveries} late</p>
                 </CardContent>
             </Card>
       </div>

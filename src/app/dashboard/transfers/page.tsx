@@ -94,7 +94,7 @@ export default function TransfersPage() {
     const getWarehouseName = (id: string) => warehouses?.find(w => w.id === id)?.name || 'N/A';
     const getProductName = (id: string) => products?.find(p => p.id === id)?.name || 'N/A';
 
-    if (isUserLoading || isWarehousesLoading || isProductsLoading) {
+    if (isUserLoading || isWarehousesLoading || isProductsLoading || isTransfersLoading) {
       return <div>Loading...</div>;
     }
     
@@ -168,9 +168,9 @@ export default function TransfersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isTransfersLoading && <TableRow><TableCell colSpan={8} className="text-center">Loading...</TableCell></TableRow>}
-              {!isTransfersLoading && transfers.length === 0 && <TableRow><TableCell colSpan={8} className="text-center">No transfers found.</TableCell></TableRow>}
-              {transfers.map((transfer) => (
+              {!transfers && <TableRow><TableCell colSpan={8} className="text-center">Loading...</TableCell></TableRow>}
+              {transfers && transfers.length === 0 && <TableRow><TableCell colSpan={8} className="text-center">No transfers found.</TableCell></TableRow>}
+              {transfers && transfers.map((transfer) => (
                 <TableRow key={transfer.id}>
                   <TableCell className="font-medium">TR-{transfer.id.substring(0,6).toUpperCase()}</TableCell>                  
                   <TableCell>{getProductName(transfer.productId)}</TableCell>

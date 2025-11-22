@@ -70,7 +70,7 @@ export default function DeliveriesPage() {
       });
     };
 
-    if (isUserLoading || isCustomersLoading) {
+    if (isUserLoading || isCustomersLoading || isDeliveriesLoading) {
       return <div>Loading...</div>;
     }
     
@@ -127,9 +127,9 @@ export default function DeliveriesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isDeliveriesLoading && <TableRow><TableCell colSpan={5} className="text-center">Loading...</TableCell></TableRow>}
-              {!isDeliveriesLoading && deliveries.length === 0 && <TableRow><TableCell colSpan={5} className="text-center">No delivery orders found.</TableCell></TableRow>}
-              {deliveries.map((delivery) => (
+              {!deliveries && <TableRow><TableCell colSpan={5} className="text-center">Loading...</TableCell></TableRow>}
+              {deliveries && deliveries.length === 0 && <TableRow><TableCell colSpan={5} className="text-center">No delivery orders found.</TableCell></TableRow>}
+              {deliveries && deliveries.map((delivery) => (
                 <TableRow key={delivery.id}>
                   <TableCell className="font-medium">DO-{delivery.id.substring(0, 6).toUpperCase()}</TableCell>
                    <TableCell>{customers?.find(c => c.id === delivery.customerId)?.name || 'N/A'}</TableCell>
