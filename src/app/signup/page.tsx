@@ -25,7 +25,7 @@ export default function SignupPage() {
   
   useEffect(() => {
     if (!isUserLoading && user) {
-      router.push('/dashboard');
+      router.replace('/dashboard');
     }
   }, [user, isUserLoading, router]);
 
@@ -76,9 +76,15 @@ export default function SignupPage() {
         <div className="flex flex-col gap-6">
           <div className="flex flex-col gap-2 text-center">
             <div className="flex justify-center mb-4">
-              <Image src="/logo.jpg" alt="GreenGrocer IMS Logo" width={120} height={120} className="rounded-lg" />
+              <Image 
+                src="/logo.png" 
+                alt="StockFlow Pro Logo" 
+                width={300} 
+                height={300} 
+                className="rounded-lg border-2 border-primary shadow-lg" 
+              />
             </div>
-            <h1 className="text-3xl font-bold">Create Account</h1>
+            <h1 className="text-7xl font-bold">Create Account</h1>
             <p className="text-muted-foreground">
               Sign up to start managing your inventory
             </p>

@@ -20,14 +20,12 @@ export default function LoginPage() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isNavigating, setIsNavigating] = useState(false);
 
   useEffect(() => {
-    if (!isUserLoading && user && !isNavigating) {
-      setIsNavigating(true);
-      router.push('/dashboard');
+    if (!isUserLoading && user) {
+      router.replace('/dashboard');
     }
-  }, [user, isUserLoading, router, isNavigating]);
+  }, [user, isUserLoading, router]);
 
   const handleLogin = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -65,11 +63,17 @@ export default function LoginPage() {
         <div className="flex flex-col gap-6">
           <div className="flex flex-col gap-2 text-center">
             <div className="flex justify-center mb-4">
-              <Image src="/logo.jpg" alt="GreenGrocer IMS Logo" width={120} height={120} className="rounded-lg" />
+              <Image 
+                src="/logo.png" 
+                alt="StockFlow Pro Logo" 
+                width={300} 
+                height={300} 
+                className="rounded-lg border-2 border-primary shadow-lg" 
+              />
             </div>
-            <h1 className="text-3xl font-bold">Welcome Back</h1>
+            <h1 className="text-7xl font-bold">Welcome Back</h1>
             <p className="text-muted-foreground">
-              Sign in to your GreenGrocer IMS account
+              Sign in to your StockFlow Pro account
             </p>
           </div>
           

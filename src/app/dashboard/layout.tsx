@@ -116,9 +116,15 @@ export default function DashboardLayout({
       <div className="hidden border-r bg-muted/40 md:block">
         <div className="flex h-full max-h-screen flex-col gap-2">
           <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
-            <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
-              <Image src="/logo.jpg" alt="Logo" width={32} height={32} className="rounded" />
-              <span className="">GreenGrocer IMS</span>
+            <Link href="/dashboard" className="flex items-center gap-2 font-semibold whitespace-nowrap">
+              <Image 
+                src="/logo.png" 
+                alt="Logo" 
+                width={80} 
+                height={80} 
+                className="rounded border border-primary/50" 
+              />
+              <span className="text-2xl">StockFlow Pro</span>
             </Link>
           </div>
           <div className="flex-1">
@@ -174,8 +180,14 @@ export default function DashboardLayout({
                   href="#"
                   className="flex items-center gap-2 text-lg font-semibold mb-4"
                 >
-                  <Image src="/logo.jpg" alt="Logo" width={32} height={32} className="rounded" />
-                  <span className="sr-only">GreenGrocer IMS</span>
+                  <Image 
+                    src="/logo.png" 
+                    alt="Logo" 
+                    width={80} 
+                    height={80} 
+                    className="rounded border border-primary/50" 
+                  />
+                  <span className="sr-only">StockFlow Pro</span>
                 </Link>
                 {navLinks.map(link => (
                   <Link
