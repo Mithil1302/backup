@@ -77,6 +77,11 @@ export default function ProductsPage() {
     setIsSheetOpen(true);
   };
 
+  const handleAddNewClick = () => {
+    setEditingProduct(null);
+    setIsSheetOpen(true);
+  }
+
   const handleSheetClose = () => {
     setIsSheetOpen(false);
     setEditingProduct(null);
@@ -85,9 +90,9 @@ export default function ProductsPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader title="Products">
-        <Sheet open={isSheetOpen} onOpenChange={handleSheetClose}>
+        <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
           <SheetTrigger asChild>
-             <Button size="sm" className="flex items-center gap-2" onClick={() => setIsSheetOpen(true)}>
+             <Button size="sm" className="flex items-center gap-2" onClick={handleAddNewClick}>
               <PlusCircle className="h-4 w-4" />
               <span>Add Product</span>
             </Button>
