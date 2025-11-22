@@ -10,8 +10,11 @@ import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { useAuth, initiateEmailSignIn, useUser } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import React, { useState, useEffect } from "react";
+import { useToast } from "@/hooks/use-toast";
+import { FirebaseError } from "firebase/app";
 
 export default function LoginPage() {
+  const { toast } = useToast();
   const loginBg = PlaceHolderImages.find(p => p.id === 'login-background');
   const auth = useAuth();
   const router = useRouter();
@@ -29,7 +32,22 @@ export default function LoginPage() {
   const handleLogin = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (auth && email && password) {
-      initiateEmailSignIn(auth, email, password);
+      initiateEmailSignIn(auth, email, password)
+      .catch((error: FirebaseError) => {
+        let title = "An error occurred";
+        let description = "Please try again later.";
+
+        if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+            title = "Login Failed";
+            description = "The email or password you entered is incorrect. Please try again.";
+        }
+        
+        toast({
+            variant: "destructive",
+            title: title,
+            description: description,
+        });
+      });
     }
   };
 

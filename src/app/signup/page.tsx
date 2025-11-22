@@ -16,8 +16,11 @@ import { useAuth, initiateEmailSignUp, useUser } from "@/firebase";
 import { useRouter } from "next/navigation";
 import React, { useState, useEffect } from "react";
 import { updateProfile } from "firebase/auth";
+import { useToast } from "@/hooks/use-toast";
+import { FirebaseError } from "firebase/app";
 
 export default function SignupPage() {
+  const { toast } = useToast();
   const auth = useAuth();
   const router = useRouter();
   const { user, isUserLoading } = useUser();
@@ -44,8 +47,23 @@ export default function SignupPage() {
                 });
             }
         })
-        .catch(error => {
-            console.error("Error during sign up:", error);
+        .catch((error: FirebaseError) => {
+            let title = "An error occurred";
+            let description = "Please try again later.";
+
+            if (error.code === 'auth/email-already-in-use') {
+                title = "Sign-up Failed";
+                description = "This email address is already in use by another account.";
+            } else if (error.code === 'auth/weak-password') {
+                title = "Sign-up Failed";
+                description = "The password is too weak. Please choose a stronger password.";
+            }
+            
+            toast({
+                variant: "destructive",
+                title: title,
+                description: description,
+            });
         });
     }
   };
